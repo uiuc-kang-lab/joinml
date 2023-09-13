@@ -6,7 +6,6 @@ import csv
 import json
 
 from transformers import pipeline
-pipe = pipeline("text-classification", model="coderpotter/adversarial-paraphrasing-detector", device=-1)
 
 class Quora(Dataset):
     def __init__(self, file_name):
@@ -30,11 +29,17 @@ class Quora(Dataset):
         index_2 = index // len(self.questions)
         return f"{self.questions[index_1]} {self.questions[index_2]}"
 
-dataset = Quora("../QQP/quora_questions.csv")
+def predict(task: str="text-classification",
+            model: str="coderpotter/adversarial-paraphrasing-detector",
+            device: int=-1,
+            dataset: Dataset = Quora("../datasets/quora_questions.csv")):
+    pipe = pipeline(task=task, model=model, device=device)
 
-for out in tqdm(pipe(dataset, batch_size=8)):
-    with open("label-QQP.jsonl", "a+") as f:
-        f.write(json.dumps(out) + "\n")
+    for out in tqdm(pipe(dataset, batch_size=8)):
+        with open("label-QQP.jsonl", "a+") as f:
+            f.write(json.dumps(out) + "\n")
 
 
-        
+
+if __name__ == "__main__":
+    predict()
