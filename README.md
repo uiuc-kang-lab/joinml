@@ -1,5 +1,7 @@
 # Datasets
 
+Real data are stored on Google drive https://drive.google.com/drive/folders/19MnzAFLazqqkTQNXOPp7mGwjLE4MEIVr?usp=drive_link
+
 ## Company
 
 **Description**: This dataset is proposed at [SIGMOD'18](https://dl.acm.org/doi/10.1145/3183713.3196926) and recently studied by [Ditto](https://arxiv.org/abs/2004.00584) with LLMs.
@@ -22,7 +24,7 @@
 5. Pair-CNN [paper](https://dl-acm-org.proxy2.library.illinois.edu/doi/abs/10.1145/2766462.2767738)
 
 ### TODO:
-- [ ] Clean the company data to two csv files. Each csv file has three columns (id, url, content), where id is a unique integer identifier
+- [ ] Clean the company data to two csv files. Each csv file has three columns (id, url, content), where id is a unique integer identifier. Upload the clean data to google drive (folder preprocessed/).
 - [ ] (report estimated completion time) finetuning RoBerTa / find find-tuned RoBerTa according to Ditto's codebase https://github.com/megagonlabs/ditto 
 - [ ] (report estimated completion time) run fine-tuned RoBerTa on the whole dataset and calculate the accuracy
 - [ ] (report estimated completion time) run string similarity measure algorithm on the company data and calculate accuracy
@@ -50,7 +52,7 @@
 5. Pair-CNN [paper](https://dl-acm-org.proxy2.library.illinois.edu/doi/abs/10.1145/2766462.2767738)
 
 ### TODO (Yuxuan):
-- [x] Clean the Quora data to two csv files. Each csv file has three columns (id, url, content), where id is a unique integer identifier
+- [x] Clean the Quora data to two csv files. Each csv file has three columns (id, url, content), where id is a unique integer identifier. Upload the clean data to google drive (folder preprocessed/).
 - [x] (report estimated completion time) finetuning RoBerTa / find find-tuned RoBerTa
 - [ ] (report estimated completion time) run fine-tuned RoBerTa on the whole dataset and calculate the accuracy
 - [ ] (report estimated completion time) run string similarity measure algorithm on the company data and calculate accuracy
@@ -76,7 +78,7 @@
 5. Pair-CNN [paper](https://dl-acm-org.proxy2.library.illinois.edu/doi/abs/10.1145/2766462.2767738)
 
 ### TODO:
-- [ ] Clean the StackOverflow data to one csv file with three columns (id, title, body), where id is a unique integer identifier
+- [ ] Clean the StackOverflow data to one csv file with three columns (id, title, body), where id is a unique integer identifier. Upload the clean data to google drive (folder preprocessed/).
 - [ ] (report estimated completion time) finetuning / find LLM from BEir
 - [ ] (report estimated completion time) run fine-tuned LLM on the whole dataset and calculate the accuracy
 - [ ] (report estimated completion time) run string similarity measure algorithm on the data and calculate accuracy
@@ -102,7 +104,7 @@
 5. Pair-CNN [paper](https://dl-acm-org.proxy2.library.illinois.edu/doi/abs/10.1145/2766462.2767738)
 
 ### TODO:
-- [ ] Clean the LanguageNet data to one csv file with two columns (id, content), where id is a unique integer identifier
+- [ ] Clean the LanguageNet data to one csv file with two columns (id, content), where id is a unique integer identifier. Upload the clean data to google drive (folder preprocessed/).
 - [ ] (report estimated completion time) run string similarity measure algorithm on the data and calculate accuracy
 - [ ] (report estimated completion time) run fine-tuned RoBerTa on the whole dataset and calculate the accuracy
 
