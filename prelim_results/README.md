@@ -25,7 +25,7 @@ Considering BERT as our detector, which runs 289.68 samples per second on a `g4d
 
 By simple math, we can get that the cost for run paraphrase detection on one article is $729714.
 
-e want to decreases to at least $7, which measn we want to reduce 99.999% call to BERT.
+We want to decreases to at least $7, which measn we want to reduce 99.999% call to BERT.
 
 ## Random sampling
 
