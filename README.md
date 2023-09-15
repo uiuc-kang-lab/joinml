@@ -1,3 +1,49 @@
+# TODO:
+## Quora dataset:
+- [ ] impl ripple/wander join
+- [ ] impl optimized random sample
+
+## Stackoverflow
+- [ ] clean data
+- [ ] estimate cost
+- [ ] run inference of oracle
+- [ ] run inference of proxy
+
+## Company
+- [ ] clean data
+- [ ] estimate cost
+- [ ] run inference of oracle
+- [ ] run inference of proxy
+
+## bi-encoder / cross-ender
+- [ ] SOTA accuracy
+- [ ] SOTA cost estimate
+- [ ] find corresponding paper
+
+
+# Cost calculation
+inference speed on T4: 289.68 samples per seconds on server (reported by MLPerf v3.1; assuming BERT)
+
+price: $0.526 per hour (AWS g4dn.xlarge; matching the record of MLPerf)
+
+## Quora Question Pairs
+total pairs: 144678694240
+
+total cost: $72974.19
+
+## General paraphrase detection
+number of sentence of an essay: 40
+
+number of article on the database (ArXiv): 2326841
+
+sentence pair detection: 40 * (2326841 * 40) = 3722945600
+
+cost per essay: $1877.80
+
+## Multi-camera tracking
+
+
+
 # Datasets
 
 Real data are stored on Google drive https://drive.google.com/drive/folders/19MnzAFLazqqkTQNXOPp7mGwjLE4MEIVr?usp=drive_link
