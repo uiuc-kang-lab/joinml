@@ -1,48 +1,26 @@
 # TODO:
-## Quora dataset:
-- [ ] impl ripple/wander join
+## Quora dataset (Yuxuan):
+- [x] impl ripple/wander join
 - [ ] impl optimized random sample
+- [ ] look into datasets for multi-target multi-camera tracking
 
-## Stackoverflow
-- [ ] clean data
-- [ ] estimate cost
-- [ ] run inference of oracle
-- [ ] run inference of proxy
+## Stackoverflow (Siheng)
+- [ ] Clean the StackOverflow data to one csv file with three columns (id, title, body), where id is a unique integer identifier. Upload the clean data to google drive (folder preprocessed/).
+- [ ] (report estimated completion time) finetuning / find LLM from BEir
+- [ ] (report estimated completion time) run fine-tuned LLM on the whole dataset and calculate the accuracy
+- [ ] (report estimated completion time) run string similarity measure algorithm on the data and calculate accuracy
 
-## Company
-- [ ] clean data
-- [ ] estimate cost
-- [ ] run inference of oracle
-- [ ] run inference of proxy
-
-## bi-encoder / cross-ender
-- [ ] SOTA accuracy
-- [ ] SOTA cost estimate
-- [ ] find corresponding paper
+## Company (Tengjun)
+- [ ] Clean the company data to two csv files. Each csv file has three columns (id, url, content), where id is a unique integer identifier. Upload the clean data to google drive (folder preprocessed/).
+- [ ] (report estimated completion time) finetuning RoBerTa / find find-tuned RoBerTa according to Ditto's codebase https://github.com/megagonlabs/ditto 
+- [ ] (report estimated completion time) run fine-tuned RoBerTa on the whole dataset and calculate the accuracy
+- [ ] (report estimated completion time) run string similarity measure algorithm on the company data and calculate accuracy
 
 
-# Cost calculation
-inference speed on T4: 289.68 samples per seconds on server (reported by MLPerf v3.1; assuming BERT)
-
-price: $0.526 per hour (AWS g4dn.xlarge; matching the record of MLPerf)
-
-## Quora Question Pairs
-total pairs: 144678694240
-
-total cost: $72974.19
-
-## General paraphrase detection
-number of sentence of an essay: 40
-
-number of article on the database (ArXiv): 2326841
-
-sentence pair detection: 40 * (2326841 * 40) = 3722945600
-
-cost per essay: $1877.80
-
-## Multi-camera tracking
-
-
+## bi-encoder / cross-encoder (Kaimeng)
+- [ ] find SOTA paper and models
+- [ ] collect SOTA accuracy
+- [ ] estimate cost 
 
 # Datasets
 
@@ -166,3 +144,7 @@ Dataset size: to be added
 Oracle model: fine-tune Roberta from https://huggingface.co/AMHR/adversarial-paraphrasing-detector
 
 Proxy model: same as QQP
+
+## Multi-target multi-camera tracking (MTMCT)
+
+working on it
