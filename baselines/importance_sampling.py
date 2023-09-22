@@ -85,6 +85,9 @@ def join(table1: List[int], table2: List[int], condition_evaluator: Callable[[in
         sample_mean = np.average(sample_means)
         ci_lower = np.average(ci_lower_bounds)
         ci_upper = np.average(ci_upper_bounds)
+	
+        lock.acquire()
+
         print(sample_ratio, sample_mean, ci_lower, ci_upper)
 
         
@@ -150,7 +153,7 @@ def run_importance(sample_ratios: List[float], dataset: str="QQP", size: int=350
             
         lock = Lock()
 
-        pool = Pool(6, initializer=init_pool_process, initargs=(lock,))
+        pool = Pool(40, initializer=init_pool_process, initargs=(lock,))
 
         args = [[qids, qids, condition_evaluator, proposal, likelihood, sample_ratio, 0.95, 10, 233] for sample_ratio in sample_ratios]
         # run join
