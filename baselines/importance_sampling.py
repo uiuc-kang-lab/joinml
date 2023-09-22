@@ -53,7 +53,7 @@ def join(table1: List[int], table2: List[int], condition_evaluator: Callable[[in
     ci_upper_bounds = []
     sample_means = []
     
-    for _ in range(repeats):
+    for i in range(repeats):
         # importance sampling
         # flatten join likelihood ratios
         flattened_proposal = []
@@ -81,27 +81,28 @@ def join(table1: List[int], table2: List[int], condition_evaluator: Callable[[in
         ci_lower_bounds.append(ci.low)
         ci_upper_bounds.append(ci.high)
         sample_means.append(sample_mean)
+        print(f"sample ratio {sample_ratio} finishes {i}/{repeats}")
 
-        sample_mean = np.average(sample_means)
-        ci_lower = np.average(ci_lower_bounds)
-        ci_upper = np.average(ci_upper_bounds)
-	
-        lock.acquire()
+    sample_mean = np.average(sample_means)
+    ci_lower = np.average(ci_lower_bounds)
+    ci_upper = np.average(ci_upper_bounds)
 
-        print(sample_ratio, sample_mean, ci_lower, ci_upper)
+    lock.acquire()
 
-        
-        if os.path.exists("importance.csv"):
-            f = open("importance.csv", 'a')
-            writer = csv.writer(f)
-        else:
-            f = open("importance.csv", 'w')
-            writer = csv.writer(f)
-            writer.writerow(["sample_ratio", "mean", "ci_lower", "ci_upper"])
+    print(sample_ratio, sample_mean, ci_lower, ci_upper)
 
-        writer.writerow([sample_ratio, sample_mean, ci_lower, ci_upper])
-        f.close()
-        lock.release()
+    
+    if os.path.exists("importance.csv"):
+        f = open("importance.csv", 'a')
+        writer = csv.writer(f)
+    else:
+        f = open("importance.csv", 'w')
+        writer = csv.writer(f)
+        writer.writerow(["sample_ratio", "mean", "ci_lower", "ci_upper"])
+
+    writer.writerow([sample_ratio, sample_mean, ci_lower, ci_upper])
+    f.close()
+    lock.release()
 
     return np.average(sample_means), np.average(ci_lower_bounds), np.average(ci_upper_bounds)
 
