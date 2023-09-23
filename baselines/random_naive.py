@@ -104,6 +104,6 @@ def run_random(sample_ratios: List[float], dataset: str="QQP", size: int=3500):
         f.close()
         
 if __name__ == '__main__':
-    sample_ratios = [0.00001*x for x in range(1,100)]
+    sample_ratios = [0.00001*x for x in range(1,100)] + [0.001*x for x in range(1,100)] + [0.2, 0.5, 0.75, 1]
     run_random(sample_ratios)
 
