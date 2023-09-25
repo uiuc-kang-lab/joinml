@@ -21,6 +21,7 @@ def construct_proposal_likelihood(proxy_file: str, size: int=3500):
             if score == 0 or qid1 == qid2:
                 score = 2e-2
             proxy_score[int(qid1)-1, int(qid2)-1] = score
+            proxy_score[int(qid2)-1, int(qid1)-1] = score
     proposal = proxy_score / np.sum(proxy_score)
     desired = 1. / (size*size) * np.ones((size, size))
     likelihood_ratios = desired / proposal
