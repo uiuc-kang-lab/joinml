@@ -6,6 +6,7 @@ import logging
 import glob
 from typing import Any, List
 import sys
+import logging
 
 def get_embedding(table: List[int|str], output_folder: str, model_name: str="all-MiniLM-L6-v2", output_file_prefix: str=""):
     model = SentenceTransformer(model_name)
@@ -35,11 +36,16 @@ class Process(object):
         self.embeddings2 = embeddings
 
     def __call__(self, args) -> List:
-        Id, embedding = args
+        Id, embedding, output_folder = args
         results = []
         for Id2, embedding2 in self.embeddings2:
             score = util.cos_sim(embedding, embedding2).item()
             results.append([Id, Id2, score])
+            # logging.info(f"done {Id}-{Id2}")
+        with open(f"{output_folder}/bi_encoder.csv", "a+") as f:
+                writer = csv.writer(f)
+                writer.writerows(results)
+        logging.info(f"finish left table entry with id {Id}")
         return results
         
 
@@ -55,23 +61,15 @@ def get_cosine_similarity(embedding_folder: str, output_folder: str, limit: int=
         for embedding_file2 in embedding_filesr:
             embeddings1_dct = torch.load(embedding_file1)
             embeddings2_dct = torch.load(embedding_file2)
-            embeddings1 = [[Id, embeddings1_dct[Id]] for Id in embeddings1_dct]
+            embeddings1_args = [[Id, embeddings1_dct[Id], output_folder] for Id in embeddings1_dct]
             embeddings1_dct.clear()
             embeddings2 = [[Id, embeddings2_dct[Id]] for Id in embeddings2_dct]
             embeddings2_dct.clear()
-            scores = []
 
-            total = len(embeddings1) * len(embeddings2)
-            with multiprocessing.Pool(processes=num_worker) as pool:
-                for results in pool.map(Process(embeddings2), embeddings1):
-                    scores += results
-                    print('\rdone {0:%}'.format(len(scores/total)))
+            with multiprocessing.Pool(num_worker) as pool:
+                pool.map(Process(embeddings2), embeddings1_args)
             
-            with open(f"{output_folder}/bi_encoder.csv", "a+") as f:
-                writer = csv.writer(f)
-                writer.writerows(scores)
+            num = len(embeddings1_args) * len(embeddings2)
             
-            scores = []
-
-            if len(scores) >= limit and limit != -1:
+            if len(num) >= limit and limit != -1:
                 break
