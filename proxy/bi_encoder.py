@@ -32,7 +32,7 @@ def run_job(args):
     Id, embedding = args
     results = []
     for Id2, embedding2 in embeddings2:
-        score = util.cos_sim(embedding, embedding2)
+        score = util.cos_sim(embedding, embedding2).item()
         results.append([Id, Id2, score])
         
 
