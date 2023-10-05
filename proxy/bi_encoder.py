@@ -40,6 +40,7 @@ def run_job(args):
     for Id2, embedding2 in embeddings2:
         score = util.cos_sim(embedding, embedding2).item()
         results.append([Id, Id2, score])
+    return results
         
 
 def get_cosine_similarity(embedding_folder: str, output_folder: str, limit: int=-1, num_worker: int=4, is_selfjoin: bool=False):
