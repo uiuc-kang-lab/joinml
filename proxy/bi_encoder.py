@@ -4,7 +4,7 @@ import multiprocessing
 import torch
 import logging
 import glob
-from typing import List
+from typing import Any, List
 import sys
 
 def get_embedding(table: List[int|str], output_folder: str, model_name: str="all-MiniLM-L6-v2", output_file_prefix: str=""):
@@ -30,17 +30,17 @@ def get_embedding(table: List[int|str], output_folder: str, model_name: str="all
         embeddings.clear()
         fid += 1
 
-def initializer(_embeddings2):
-    global embeddings2
-    embeddings2 = _embeddings2
+class Process(object):
+    def __init__(self, embeddings) -> None:
+        self.embeddings2 = embeddings
 
-def run_job(args):
-    Id, embedding = args
-    results = []
-    for Id2, embedding2 in embeddings2:
-        score = util.cos_sim(embedding, embedding2).item()
-        results.append([Id, Id2, score])
-    return results
+    def __call__(self, args) -> List:
+        Id, embedding = args
+        results = []
+        for Id2, embedding2 in self.embeddings2:
+            score = util.cos_sim(embedding, embedding2).item()
+            results.append([Id, Id2, score])
+        return results
         
 
 def get_cosine_similarity(embedding_folder: str, output_folder: str, limit: int=-1, num_worker: int=4, is_selfjoin: bool=False):
@@ -62,8 +62,8 @@ def get_cosine_similarity(embedding_folder: str, output_folder: str, limit: int=
             scores = []
 
             total = len(embeddings1) * len(embeddings2)
-            with multiprocessing.Pool(processes=num_worker, initializer=initializer, initargs=(embeddings2,)) as pool:
-                for results in pool.map(run_job, embeddings1):
+            with multiprocessing.Pool(processes=num_worker) as pool:
+                for results in pool.map(Process(embeddings2), embeddings1):
                     scores += results
                     print('\rdone {0:%}'.format(len(scores/total)))
             
