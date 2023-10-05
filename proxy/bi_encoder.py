@@ -12,7 +12,9 @@ def get_embedding(table: List[int|str], output_folder: str, model_name: str="all
     model = SentenceTransformer(model_name)
     embeddings = {}
     fid = 0
-    for Id, content in table:
+    for entry in table:
+        Id = entry[0]
+        content = entry[-1]
         try:
             embedding = model.encode(content, convert_to_tensor=True)
             embeddings[Id] = embedding
@@ -32,19 +34,23 @@ def get_embedding(table: List[int|str], output_folder: str, model_name: str="all
         fid += 1
 
 class Process(object):
-    def __init__(self, embeddings) -> None:
+    def __init__(self, embeddings, lock: multiprocessing.Lock, output_folder: str) -> None:
         self.embeddings2 = embeddings
+        self.lock = lock
+        self.output_folder = output_folder
 
     def __call__(self, args) -> List:
-        Id, embedding, output_folder = args
+        Id, embedding = args
         results = []
         for Id2, embedding2 in self.embeddings2:
             score = util.cos_sim(embedding, embedding2).item()
             results.append([Id, Id2, score])
-            # logging.info(f"done {Id}-{Id2}")
-        with open(f"{output_folder}/bi_encoder.csv", "a+") as f:
+        
+        self.lock.acquire()
+        with open(f"{self.output_folder}/ml_embedding.csv", "a+") as f:
                 writer = csv.writer(f)
                 writer.writerows(results)
+        self.lock.release()
         logging.info(f"finish left table entry with id {Id}")
         return results
         
@@ -61,15 +67,15 @@ def get_cosine_similarity(embedding_folder: str, output_folder: str, limit: int=
         for embedding_file2 in embedding_filesr:
             embeddings1_dct = torch.load(embedding_file1)
             embeddings2_dct = torch.load(embedding_file2)
-            embeddings1_args = [[Id, embeddings1_dct[Id], output_folder] for Id in embeddings1_dct]
+            embeddings1 = [[Id, embeddings1_dct[Id]] for Id in embeddings1_dct]
             embeddings1_dct.clear()
             embeddings2 = [[Id, embeddings2_dct[Id]] for Id in embeddings2_dct]
             embeddings2_dct.clear()
-
+            lock = multiprocessing.Lock()
             with multiprocessing.Pool(num_worker) as pool:
-                pool.map(Process(embeddings2), embeddings1_args)
+                pool.map(Process(embeddings2, lock), embeddings1)
             
-            num = len(embeddings1_args) * len(embeddings2)
+            num = len(embeddings1) * len(embeddings2)
             
             if len(num) >= limit and limit != -1:
                 break

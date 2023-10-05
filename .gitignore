@@ -1,4 +1,7 @@
-# real data
 **/datasets/*
 **/.DS_Store
 check_stats.ipynb
+**/embeddings/
+**/__pycache__
+proxy/**/*.csv
+**/log
