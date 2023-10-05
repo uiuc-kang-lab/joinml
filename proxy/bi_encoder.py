@@ -23,6 +23,12 @@ def get_embedding(table: List[int|str], output_folder: str, model_name: str="all
         if sys.getsizeof(embeddings) >= 1e9:
             torch.save(embeddings, f"{output_folder}/{output_file_prefix}{fid}.pt")
             embeddings.clear()
+            fid += 1
+    
+    if len(embeddings) != 0:
+        torch.save(embeddings, f"{output_folder}/{output_file_prefix}{fid}.pt")
+        embeddings.clear()
+        fid += 1
 
 def initializer(_embeddings2):
     global embeddings2
