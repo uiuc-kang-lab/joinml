@@ -64,11 +64,11 @@ def get_cosine_similarity(embedding_folder: str, output_folder: str, limit: int=
             with multiprocessing.Pool(processes=num_worker, initializer=initializer, initargs=(embeddings2,)) as pool:
                 for i, results in enumerate(pool.imap_unordered(run_job, embeddings1)):
                     scores += results
-                    sys.stderr.write('\rdone {0:%}'.format(i/len(embeddings1)))
+                    print('\rdone {0:%}'.format(i/len(embeddings1)))
             
             with open(f"{output_folder}/bi_encoder.csv", "a+") as f:
                 writer = csv.writer(f)
-                writer.writerow(scores)
+                writer.writerows(scores)
             
             scores = []
 
