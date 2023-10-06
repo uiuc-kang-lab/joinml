@@ -37,8 +37,8 @@ def get_proxy(args: argparse.Namespace, base_dir: str="."):
             header = next(reader)
             count = 0
             for row in reader:
-                url, description = row
-                ltable.append([url, description])
+                Id, _, description = row
+                ltable.append([Id, description])
                 count += 1
                 if count >= args.limit and args.limit != -1:
                     break
@@ -48,8 +48,8 @@ def get_proxy(args: argparse.Namespace, base_dir: str="."):
             header = next(reader)
             count = 0
             for row in reader:
-                url, description = row
-                rtable.append([url, description])
+                Id, _, description = row
+                rtable.append([Id, description])
                 count += 1
                 if count >= args.limit and args.limit != -1:
                     break

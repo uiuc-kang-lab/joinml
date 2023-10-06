@@ -34,9 +34,9 @@ def get_embedding(table: List[int|str], output_folder: str, model_name: str="all
         fid += 1
 
 class Process(object):
-    def __init__(self, embeddings, lock: multiprocessing.Lock, output_folder: str) -> None:
+    def __init__(self, embeddings, output_folder: str) -> None:
         self.embeddings2 = embeddings
-        self.lock = lock
+        # self.lock = lock
         self.output_folder = output_folder
 
     def __call__(self, args) -> List:
@@ -44,13 +44,13 @@ class Process(object):
         results = []
         for Id2, embedding2 in self.embeddings2:
             score = util.cos_sim(embedding, embedding2).item()
-            results.append([Id, Id2, score])
+            results.append([Id, Id2, f"{score:.2}"])
         
-        self.lock.acquire()
+        # self.lock.acquire()
         with open(f"{self.output_folder}/ml_embedding.csv", "a+") as f:
                 writer = csv.writer(f)
                 writer.writerows(results)
-        self.lock.release()
+        # self.lock.release()
         logging.info(f"finish left table entry with id {Id}")
         return results
         
@@ -71,9 +71,9 @@ def get_cosine_similarity(embedding_folder: str, output_folder: str, limit: int=
             embeddings1_dct.clear()
             embeddings2 = [[Id, embeddings2_dct[Id]] for Id in embeddings2_dct]
             embeddings2_dct.clear()
-            lock = multiprocessing.Lock()
+            # lock = multiprocessing.Lock()
             with multiprocessing.Pool(num_worker) as pool:
-                pool.map(Process(embeddings2, lock), embeddings1)
+                pool.map(Process(embeddings2, output_folder), embeddings1)
             
             num = len(embeddings1) * len(embeddings2)
             
