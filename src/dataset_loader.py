@@ -1,44 +1,86 @@
 import csv
+from internal.table import Table
+from internal.proxy import Proxy
+import numpy as np
+from typing import List
+import logging
+import sys
+
+class Dataset(object):
+    def __init__(self, tables: List[Table], proxy: Proxy, name: str, limit: int=-1) -> None:
+        self.tables = tables
+        self.proxy = proxy
+        with open(f"datasets/{name}/positive_labels.csv") as f:
+            reader = csv.reader(f)
+            _ = next(reader)
+            labels = set()
+            for row in reader:
+                satisfy_limit = True
+                for i in row:
+                    if int(i) >= limit and limit != -1:
+                        satisfy_limit = False
+                if satisfy_limit:
+                    label = "|".join(row)
+                    labels.add(label)
+        self.labels = labels
+        logging.info("groundtruth: {}".format(len(self.labels) / np.prod([len(table) for table in self.tables])))
+    
+    def evaluate_conditions(self, conditions: List[List[int]]) -> np.array:
+        results = []
+        for ids in conditions:
+            ids = [str(Id) for Id in ids]
+            label = "|".join(ids)
+            if label in self.labels:
+                results.append(1.)
+            else:
+                results.append(0.)
+        return np.array(results)
+    
+    def get_proxy_matrix(self):
+        return self.proxy.proxy_matrix
 
 def load_dataset(dataset: str, proxy: str, limit: int=-1):
     if dataset == "qqp":
-        with open(f"proxy/qqp/{proxy}.csv") as f:
-            reader = csv.reader(f)
-            header = next(reader)
-            proxy_scores = []
-            for row in reader:
-                qid1, qid2, score = row
-                qid1 = int(qid1)
-                qid2 = int(qid2)
-                selected = set()
-                selected.add(qid1)
-                selected.add(qid2)
-                if limit == -1:
-                    proxy_scores.append([qid1, qid2, score])
-                    continue
-                if len(selected) == limit:
-                    proxy_scores.append([qid1, qid2, score])
-                    break
-                elif len(selected) == limit + 1:
-                    selected.remove(qid1)
-                    selected.remove(qid2)
-                    break
-
+        proxy_file = f"proxy/qqp/{proxy}.npy"
+        proxy_np = np.load(proxy_file)
+        proxy_scores = Proxy(proxy_np, limit=limit)
+        
+        rows = []
         with open("datasets/qqp/quora_questions.csv") as f:
             reader = csv.reader(f)
             header = next(reader)
             qids = []
             for row in reader:
-                qid, _ = row
-                if int(qid) in selected:
-                    qids.append(int(qid))
+                qid, _, _ = row
+                if int(qid) < limit:
+                    rows.append(row)
         
-        with open("datasets/qqp/positive_labels.csv") as f:
+        table = Table(rows)
+
+        return Dataset([table, table], proxy_scores, dataset)
+    elif dataset == "company":
+        csv.field_size_limit(sys.maxsize)
+        proxy_file = f"proxy/company/{proxy}.npy"
+        proxy_np = np.load(proxy_file)
+        proxy_scores = Proxy(proxy_np, limit=limit)
+
+        rows = []
+        with open("datasets/company/companyA.csv") as f:
             reader = csv.reader(f)
             header = next(reader)
-            labels = set()
             for row in reader:
-                qid1, qid2 = row
-                labels.add(f"{qid1}|{qid2}")
+                Id, _, _ = row
+                if int(Id) < limit or limit == -1:
+                    rows.append(row)
+        tableA = Table(rows)
 
-        return qids, qids, labels, proxy_scores
+        rows = []
+        with open("datasets/company/companyB.csv") as f:
+            reader = csv.reader(f)
+            header = next(reader)
+            for row in reader:
+                Id, _, _ = row
+                if int(Id) < limit or limit == -1:
+                    rows.append(row)
+        tableB = Table(rows)
+        return Dataset([tableA, tableB], proxy_scores, dataset, limit=limit)

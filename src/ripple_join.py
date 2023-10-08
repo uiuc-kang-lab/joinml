@@ -5,51 +5,41 @@ import math
 import numpy as np
 from scipy import stats
 import multiprocessing
+from internal.table import Table
+from dataset_loader import Dataset
+from itertools import product
 
 def join(args):
-    table1, table2, labels, sample_ratio, output_file, confidence_level, repeats, seed = args
-    def condition_evaluator(id1, id2):
-        if id1 == id2:
-            return False
-        
-        pair1 = f"{id1}|{id2}"
-        pair2 = f"{id2}|{id1}"
-        if pair1 in labels or pair2 in labels:
-            return True
-        else:
-            return False
+    dataset, sample_ratio, output_file, confidence_level, repeats, seed = args
+    assert isinstance(dataset, Dataset)
 
     random.seed(seed)
-    sample_ratio1 = math.sqrt(sample_ratio * len(table1) / len(table2))
-    sample_ratio2 = math.sqrt(sample_ratio * len(table2) / len(table1))
-    sample_size1 = int(sample_ratio1 * len(table1))
-    sample_size2 = int(sample_ratio2 * len(table2))
 
+    # calculate the sample rate for each table proportional to the size of the table
+    # product of the sample rate is the sample rate for the whole join
+    full_join_size = np.prod([len(table) for table in dataset.tables])
+    sample_sizes = np.power(sample_ratio, 1 / len(dataset.tables)) / np.power(full_join_size, 1/len(dataset.tables)) * np.array([len(table)**2 for table in dataset.tables])
+    if len(np.where(sample_sizes < 10)[0]) > 0:
+        print(f"sample size {sample_sizes} is too small, skip")
+        return
     ci_lower_bounds = []
     ci_upper_bounds = []
     sample_means = []
 
     for _ in range(repeats):
-        # random sample
-        table1_sample = random.sample(table1, k=sample_size1)
-        table2_sample = random.sample(table2, k=sample_size2)
-        sample_pairs = [[id1, id2] for id1 in table1_sample for id2 in table2_sample]
-        sample_results = []
-
+        # random sample one sample for each table
+        table_samples = []
+        for tid, sample_size in enumerate(sample_sizes):
+            table_samples.append(random.sample(dataset.tables[tid].get_ids(), k=int(sample_size)))
+        sample_pairs = product(*table_samples)
+        # join
+        join_results = dataset.evaluate_conditions(sample_pairs)
+        # calculate stats
         ci_lower_bounds = []
         ci_upper_bounds = []
         sample_means = []
-
-        for sample_pair in sample_pairs:
-            if condition_evaluator(*sample_pair):
-                sample_results.append(1.)
-            else:
-                sample_results.append(0.)
-        
-        # calculate stats
-        sample_results = np.array(sample_results)
-        sample_mean = sample_results.mean()
-        ttest = stats.ttest_1samp(sample_results, popmean=sample_mean)
+        sample_mean = join_results.mean()
+        ttest = stats.ttest_1samp(join_results, popmean=sample_mean)
         ci = ttest.confidence_interval(confidence_level=confidence_level)
         ci_lower_bounds.append(ci.low)
         ci_upper_bounds.append(ci.high)
@@ -61,10 +51,9 @@ def join(args):
     
     with open(output_file, "a+") as f:
         writer = csv.writer(f)
-        writer.writerow([mean, ci_lower_bound, ci_upper_bound])
+        writer.writerow([sample_ratio, mean, ci_lower_bound, ci_upper_bound])
 
-def run_ripple(sample_ratios: List[float], ltable: List[int|str], rtable: List[int|str],
-               labels: set, repeats: int, output_file: str, seed: int=2333, num_worker: int=1):
+def run_ripple(sample_ratios: List[float], dataset: Dataset, repeats: int, output_file: str, seed: int=2333, num_worker: int=1):
     with multiprocessing.Pool(processes=num_worker) as pool:
-        job_args = [[ltable, rtable, labels, sample_ratio, output_file, 0.95, repeats, seed] for sample_ratio in sample_ratios]
+        job_args = [[dataset, sample_ratio, output_file, 0.95, repeats, seed] for sample_ratio in sample_ratios]
         pool.map(join, job_args)
