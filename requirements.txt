@@ -1,0 +1,7 @@
+bitarray
+matplotlib
+numpy
+scipy
+tqdm
+py_stringmatching
+sentence_transformers
