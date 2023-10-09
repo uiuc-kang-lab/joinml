@@ -58,7 +58,7 @@ def join(args) -> None:
 
 
 def run_weighted_wander(sample_ratios: List[float], dataset: Dataset, repeats: int, output_file: str, seed: int, num_worker: int):
-    with multiprocessing.Pool(num_worker) as pool:    
-        job_args = [(sample_raito, dataset, repeats, output_file, seed, 0.95) for sample_raito in sample_ratios]
-        pool.map(join, job_args)
+    for sample_ratio in sample_ratios:
+        args = (sample_ratio, dataset, repeats, output_file, seed, 0.95)
+        join(args)
     
