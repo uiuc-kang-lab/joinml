@@ -52,8 +52,6 @@ def join(args) -> None:
         lowers.append(ci_lower)
         logging.info(f"sample ratio {sample_ratio} finishes {i+1}")
     
-    logging.info(sample_ratio, np.average(results), np.average(uppers), np.average(lowers))
-
     with open(output_file, "a+") as f:
         writer = csv.writer(f)
         writer.writerow(["{:.2}".format(sample_ratio), np.average(results), np.average(uppers), np.average(lowers)])
