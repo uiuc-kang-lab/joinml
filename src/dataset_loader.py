@@ -70,7 +70,8 @@ def load_dataset(dataset: str, proxy: str, limit: int=-1):
             header = next(reader)
             for row in reader:
                 Id, _, _ = row
-                if int(Id) < limit or limit == -1:
+                Id = int(Id)
+                if Id < limit or limit == -1:
                     rows.append(row)
         tableA = Table(rows)
 
@@ -80,7 +81,26 @@ def load_dataset(dataset: str, proxy: str, limit: int=-1):
             header = next(reader)
             for row in reader:
                 Id, _, _ = row
-                if int(Id) < limit or limit == -1:
+                Id = int(Id)
+                if Id < limit or limit == -1:
                     rows.append(row)
         tableB = Table(rows)
         return Dataset([tableA, tableB], proxy_scores, dataset, limit=limit)
+    elif dataset == "AICity_vehicle":
+        proxy_file = f"proxy/AICity_vehicle/{proxy}.npy"
+        proxy_np = np.load(proxy_file)
+        proxy_scores = Proxy(proxy_np, limit=limit)
+
+        cameras = ["c001", "c002", "c003"]
+        tables = []
+        for camera in cameras:
+            rows = []
+            with open(f"datasets/AICity_vehicle/S01/{camera}/det/det_yolo3_id.csv") as f:
+                reader = csv.reader(f)
+                header = next(reader)
+                for row in reader:
+                    Id = int(row[0])
+                    if Id < limit or limit == -1:
+                        rows.append(row)
+            tables.append(Table(rows))
+        return Dataset(tables, proxy_scores, dataset, limit=limit)
