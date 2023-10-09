@@ -50,7 +50,7 @@ def join(args) -> None:
         results.append(count_result)
         uppers.append(ci_upper)
         lowers.append(ci_lower)
-        logging.info(f"sample ratio {sample_ratio} finishes {i+1}")
+        print(f"sample ratio {sample_ratio} finishes {i+1}")
     
     with open(output_file, "a+") as f:
         writer = csv.writer(f)
