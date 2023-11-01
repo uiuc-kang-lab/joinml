@@ -1,7 +1,9 @@
-**/datasets/*
 **/.DS_Store
-check_stats.ipynb
-**/embeddings/
+**.ipynb
 **/__pycache__
-proxy/**/*.csv
-**/log
+**/logs
+data/city_vehicle
+data/company
+data/quora
+data/twitter
+archive
