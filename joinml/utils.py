@@ -4,8 +4,7 @@ import math
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import random
-import numpy as np
-
+from numba import jit
 
 def read_csv(path):
     """Read a CSV file."""
@@ -37,3 +36,18 @@ def normalize(x: np.ndarray, is_self_join: bool=False):
 def set_random_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
+
+@jit(nopython=True)
+def calculate_score_for_tuples(embeddings: np.ndarray) -> np.ndarray:
+    scores = np.zeros(len(embeddings))
+    for i in range(len(embeddings)):
+        scores[i] = np.dot(embeddings[i][0], embeddings[i][1]) / (np.linalg.norm(embeddings[i][0]) * np.linalg.norm(embeddings[i][1]))
+    return scores
+
+@jit(nopython=True)
+def calculate_scre_for_tables(embeddings1: np.ndarray, embeddings2: np.ndarray) -> np.ndarray:
+    scores = np.ones((len(embeddings1), len(embeddings2)))
+    for i in range(len(embeddings1)):
+        for j in range(len(embeddings2)):
+            scores[i][j] = np.dot(embeddings1[i], embeddings2[j]) / (np.linalg.norm(embeddings1[i]) * np.linalg.norm(embeddings2[j]))
+    return scores
