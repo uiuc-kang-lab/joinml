@@ -3,7 +3,8 @@ from itertools import product
 import numpy as np
 from joinml.proxy.proxy import Proxy
 from py_stringmatching.tokenizer.alphanumeric_tokenizer import AlphanumericTokenizer
-from numba import jit
+from joinml.config import Config
+
 
 available_proxy = {
     "Affine",
@@ -32,8 +33,9 @@ available_proxy = {
 }
 
 class StringMatchingProxy(Proxy):
-    def __init__(self, proxy_name: str) -> None:
+    def __init__(self, config: Config) -> None:
         super().__init__()
+        proxy_name = config.proxy
         self.tokenizer = None
         if proxy_name not in available_proxy:
             raise ValueError(f"Proxy {proxy_name} is not available.")
@@ -176,6 +178,7 @@ class StringMatchingProxy(Proxy):
 
 
 if __name__ == "__main__":
+    config = Config()
     sentences = [
         "How can Internet speed be increased by hacking through DNS?",
         "Which is the best digital marketing institution in banglore?",
@@ -206,7 +209,8 @@ if __name__ == "__main__":
     run_time = {}
     for proxy_name in available_proxy:
         print(f"Proxy: {proxy_name}")
-        proxy = StringMatchingProxy(proxy_name)
+        config.proxy = proxy_name
+        proxy = StringMatchingProxy(config)
         start = time.time()
         for _ in range(10):
             print(proxy.get_proxy_score_for_tables(table1, table2))
