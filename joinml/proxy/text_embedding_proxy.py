@@ -11,7 +11,7 @@ from itertools import product
 import time
 
 
-class TransformerProxy(Proxy):
+class TextEmbeddingProxy(Proxy):
     def __init__(self, config: Config) -> None:
         self.model = get_sentence_transformer(config.proxy)
         self.device = config.device

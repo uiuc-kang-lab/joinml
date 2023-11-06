@@ -4,6 +4,7 @@ import numpy as np
 from joinml.proxy.proxy import Proxy
 from py_stringmatching.tokenizer.alphanumeric_tokenizer import AlphanumericTokenizer
 from joinml.config import Config
+from tqdm import tqdm
 
 
 available_proxy = {
@@ -158,7 +159,7 @@ class StringMatchingProxy(Proxy):
         
         scores = np.zeros((len(table1), len(table2)))
 
-        for id1, id2 in product(list(range(len(table1))), list(range(len(table2)))):
+        for id1, id2 in tqdm(product(list(range(len(table1))), list(range(len(table2))))):
             scores[id1, id2] = self.sim_func(table1[id1], table2[id2])
         
         return scores

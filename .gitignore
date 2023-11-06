@@ -7,3 +7,4 @@ data/company
 data/quora
 data/twitter
 archive
+**/model_cache

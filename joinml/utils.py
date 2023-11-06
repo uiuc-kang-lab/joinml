@@ -5,6 +5,7 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 import random
 from numba import jit
+import logging
 
 def read_csv(path):
     """Read a CSV file."""
@@ -16,6 +17,10 @@ def divide_sample_rate(rate: float, table_sizes: List[int]):
     table_rate = math.pow(rate, 1 / len(table_sizes))
     return [int(table_rate * size) for size in table_sizes]
 
+def divide_sample_size(sample_size: int, table_sizes: List[int]):
+    table_rate = math.pow(sample_size/np.prod(table_sizes), 1 / len(table_sizes))
+    return [int(table_rate * size) for size in table_sizes]
+
 def get_sentence_transformer(model_name: str="all-MiniLM-L6-v2") -> SentenceTransformer:
     return SentenceTransformer(model_name)
 
@@ -23,14 +28,16 @@ def normalize(x: np.ndarray, is_self_join: bool=False):
     # avoid select duplicate
     if is_self_join:
         assert len(x.shape) == 2 and x.shape[0] == x.shape[1]
-        for i in range(x.shape[0]):
-            x[i,i] = x.min()
-    # normalize to [0, 1]
-    x = (x - np.min(x)) / (np.max(x) - np.min(x))
+        # set diagonal to min
+        x[np.diag_indices(x.shape[0])] = np.min(x)
+    # normalize each row to [0, 1]
+    x -= np.min(x, axis=1, keepdims=True)
+    x /= np.max(x, axis=1, keepdims=True)
     # avoid 0
-    x[x == 0] = np.min(np.nonzero(x))
-    # normalize to sum 1
-    x /= np.sum(x)
+    x[x==0] = np.min(x[x!=0])
+
+    # normalize each row to sum 1
+    x /= np.sum(x, axis=1, keepdims=True)
     return x
 
 def set_random_seed(seed):
@@ -51,3 +58,11 @@ def calculate_scre_for_tables(embeddings1: np.ndarray, embeddings2: np.ndarray) 
         for j in range(len(embeddings2)):
             scores[i][j] = np.dot(embeddings1[i], embeddings2[j]) / (np.linalg.norm(embeddings1[i]) * np.linalg.norm(embeddings2[j]))
     return scores
+
+def set_up_logging(log_file: str):
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        filename=log_file,
+        filemode="w"
+    )

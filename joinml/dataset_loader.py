@@ -10,14 +10,28 @@ class JoinDataset:
         for table_file in table_files:
             table_data = read_csv(table_file)
             self.tables.append(table_data)
+        id2join_col = []
+        for table in self.tables:
+            id2join_col_table = {}
+            for row in table:
+                id2join_col_table[int(row[0])] = row[-1]
+            id2join_col.append(id2join_col_table)
+        self.id2join_col = id2join_col
+
         
     def get_sizes(self):
         return [len(table) for table in self.tables]
     
+    def get_ids(self):
+        return [id2_join_col_table.keys() for id2_join_col_table in self.id2join_col]
+    
     def get_join_column_per_table(self, ids: List[List[int]]):
         join_column_per_table = []
-        for table, table_ids in zip(self.tables, ids):
-            join_column_per_table.append([table[Id][-1] for Id in table_ids])
+        for id2join_col_table, table_ids in zip(self.id2join_col, ids):
+            join_column = []
+            for Id in table_ids:
+                join_column.append(id2join_col_table[Id])
+            join_column_per_table.append(join_column)
         return join_column_per_table
 
 

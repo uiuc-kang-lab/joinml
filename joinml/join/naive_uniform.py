@@ -4,7 +4,8 @@ from joinml.config import Config
 from typing import List
 import numpy as np
 from itertools import product
-from numba import njit
+import logging
+from tqdm import tqdm
 
 def run_uniform(oracle: Oracle, config: Config, ids: List[List[int]]):
     all_results = []
@@ -16,12 +17,13 @@ def run_uniform(oracle: Oracle, config: Config, ids: List[List[int]]):
         samples = tuples[samples]
         # run oracle
         results = []
-        for sample in samples:
+        for sample in tqdm(samples):
             if oracle.query(sample):
                 results.append(1)
             else:
                 results.append(0)
         all_results.append(np.array(results))
+        logging.info(f"uniform sampling join results: {np.average(all_results[-1])}" )
     return all_results
 
 if __name__ == "__main__":
