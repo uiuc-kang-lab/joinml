@@ -54,6 +54,3 @@ def run(config: Config):
     for result in results:
         error_meter.add_results(result)
     error_meter.report()
-
-
-
