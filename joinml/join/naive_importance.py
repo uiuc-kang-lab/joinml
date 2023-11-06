@@ -3,9 +3,8 @@ from joinml.config import Config
 
 import numpy as np
 from typing import List
-from numba import njit
 
-njit
+
 def convert_table_ids_to_table_indices(samples: np.ndarray, ids: List[List[int]]):
     sample_ids = np.zeros(samples.shape)
     for i in range(samples.shape[0]):
@@ -19,17 +18,20 @@ def run_naive_importance(scores: np.ndarray, oracle: Oracle, config: Config, ids
     for _ in range(config.repeats):
         # run sampling
         samples = np.random.choice(np.prod(scores.shape), config.join_sample_size, replace=True, p=scores.flatten())
-        # samples are flattened indices
-        # convert them to table indices
+        
+        # convert samples to table indices
         samples = np.unravel_index(samples, scores.shape)
         samples = np.array(samples).T
+        
         # convert table indices to table ids
         sample_ids = convert_table_ids_to_table_indices(samples, ids)
+
         # run oracle
         results = []
         n_total_tuples = np.prod(scores.shape)
-        for sample in sample_ids:
-            if oracle.query(sample):
+        for sample_id, sample in zip(sample_ids, samples):
+            sample = tuple(sample)
+            if oracle.query(sample_id):
                 results.append(1 / n_total_tuples / scores[sample])
             else:
                 results.append(0)
@@ -57,4 +59,5 @@ if __name__ == "__main__":
     results = run_naive_importance(score, oracle, config, [ids, ids])
     end = time.time()
     print(f"cost {end - start} seconds")
+
 
