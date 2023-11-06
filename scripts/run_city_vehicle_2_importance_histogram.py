@@ -3,13 +3,12 @@ from joinml.executable.run_one_proxy import run
 import logging
 
 config = Config(
-    dataset_name="company",
+    dataset_name="city_vehicle_2",
     join_algorithm="naive_importance",
-    proxy="Cosine",
+    proxy="Compare Histogram",
     is_self_join=False,
-    log_path="logs/company-ni-cosine.log",
-    repeats=20,
-    proxy_cache=True
+    log_path="logs/city_vehicle_2-importance_histogram.log",
+    repeats=20
 )
 
 join_sample_sizes = [1000, 10000, 100000, 1000000, 10000000]

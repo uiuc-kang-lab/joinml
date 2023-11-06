@@ -3,11 +3,11 @@ from joinml.executable.run_one_proxy import run
 import logging
 
 config = Config(
-    dataset_name="company",
+    dataset_name="twitter",
     join_algorithm="naive_importance",
     proxy="Cosine",
-    is_self_join=False,
-    log_path="logs/company-ni-cosine.log",
+    is_self_join=True,
+    log_path="logs/twitter-ni-cosine.log",
     repeats=20,
     proxy_cache=True
 )
