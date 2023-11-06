@@ -24,6 +24,7 @@ Help()
    echo "======= Available datasets ======="
    echo "twitter                      twitter dataset (about 3.0MB)"
    echo "quora                        quora dataset (about 710KB)"
+   echo "quora_3500                   quora first 3500 rows with proxy (about 93.7MB)"
    echo "company                      company dataset (about 137MB)"
    echo "city_vehicle                 AICity Vehicle multi-camera multi-target tracking dataset (about 469MB)"
    echo "city_vehicle_2               AICity Vehicle multi-camera multi-target tracking dataset two table version (about 336MB)"
@@ -64,6 +65,25 @@ quora()
         echo -e "${GREEN}quora dataset downloaded!${NC}"
     else
         echo -e "${RED}quora dataset already exists under ${DIR}/quora/!"
+fi
+}
+
+quora_3500()
+{
+    if [ ! -d "${DIR}/quora_3500/" ];
+    then
+        echo "Downloading quora_3500 dataset(about 720KB)..."
+        gdown 1zwwNOgrKtfXL4CIL_b32qSFwoKvqS1HY
+
+        echo "Dataset downloaded, now decompressing..."
+        tar -xf ${DIR}/quora_3500.tar -C ${DIR}
+
+        echo "Removing compressed file..."
+        rm -f ${DIR}/quora_3500.tar
+
+        echo -e "${GREEN}quora_3500 dataset downloaded!${NC}"
+    else
+        echo -e "${RED}quora_3500 dataset already exists under ${DIR}/quora_3500/!"
 fi
 }
 
@@ -136,6 +156,9 @@ Download() {
             quora )
                 quora
                 ;;
+            quora_3500 )
+                quora_3500
+                ;;
             company )
                 company
                 ;;
@@ -167,6 +190,8 @@ Remove() {
             city_vehicle )
                 rm -rf  ${DIR}/$data;
                 ;;
+            quora_3500 )
+                rm -rf  ${DIR}/$data;
         esac
     done
 }
