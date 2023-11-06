@@ -63,9 +63,11 @@ def calculate_scre_for_tables(embeddings1: np.ndarray, embeddings2: np.ndarray) 
     return scores
 
 def set_up_logging(log_file: str):
+    import sys, os
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
         filename=log_file,
-        filemode="w"
+        filemode="a+",
+        force=True
     )
