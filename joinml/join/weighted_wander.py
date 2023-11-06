@@ -3,7 +3,6 @@ from joinml.config import Config
 
 import numpy as np
 from typing import List
-from numba import njit
 
 def sample_for_wander_join(scores: List[np.ndarray], sample_size: int):
     table_0_size = scores[0].shape[0]
@@ -19,7 +18,6 @@ def sample_for_wander_join(scores: List[np.ndarray], sample_size: int):
             sample_probs[i] *= prob_for_right_table[samples[i][j+1]]
     return samples, sample_probs
 
-njit
 def convert_samples_to_ids(samples: np.ndarray, ids: List[List[int]]):
     sample_ids = np.zeros(samples.shape)
     for i in range(samples.shape[0]):
