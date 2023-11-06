@@ -13,7 +13,7 @@ class Oracle:
         logging.info("Loading oracle labels from %s", oracle_label_file)
         raw_oracle_label_list = read_csv(oracle_label_file)
         self.oracle_labels = set([tuple(row) for row in raw_oracle_label_list])
-        logging.info("find %d oracle (positive) labels", len(raw_oracle_label_list))
+        logging.info("find %d oracle (positive) labels", len(self.oracle_labels))
         self.cache = set()
     
     def query(self, data: Tuple[int]):
