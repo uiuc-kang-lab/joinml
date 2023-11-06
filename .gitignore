@@ -2,7 +2,7 @@
 **.ipynb
 **/__pycache__
 **/logs
-data/city_vehicle
+data/city_vehicle*
 data/company
 data/quora
 data/twitter
