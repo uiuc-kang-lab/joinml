@@ -23,7 +23,7 @@ class JoinDataset:
         return [len(table) for table in self.tables]
     
     def get_ids(self):
-        return [id2_join_col_table.keys() for id2_join_col_table in self.id2join_col]
+        return [list(id2_join_col_table.keys()) for id2_join_col_table in self.id2join_col]
     
     def get_join_column_per_table(self, ids: List[List[int]]):
         join_column_per_table = []
