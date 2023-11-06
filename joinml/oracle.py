@@ -18,7 +18,7 @@ class Oracle:
     
     def query(self, data: Tuple[int]):
         """Query the oracle for a data point."""
-        data_str = tuple([str(d) for d in data])
+        data_str = tuple([str(int(d)) for d in data])
         if data_str not in self.cache:
             self.cache.add(data_str)
         return data_str in self.oracle_labels
