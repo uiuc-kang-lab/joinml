@@ -27,12 +27,12 @@ def run(config: Config):
     scores = []
     if config.join_algorithm in ["weighted_wander", "naive_importance"]:
         # get scores
-        proxy_cache_path = f"{config.data_path}/{config.dataset_name}/proxy_cache/"
+        proxy_cache_path = f"{config.data_path}/{config.dataset_name}/proxy_cache"
         if not os.path.exists(f"{proxy_cache_path}/{config.proxy}.pkl"):
             logging.info(f"Running {config.proxy}...")
             if config.is_self_join:
                 scores = proxy.get_proxy_score_for_tables(dataset_join_cols[0], dataset_join_cols[0])
-                scores = [normalize(scores)]
+                scores = [normalize(scores, is_self_join=True)]
             else:
                 scores = []
                 for i in range(1,len(dataset_join_cols)):
@@ -43,7 +43,7 @@ def run(config: Config):
             logging.info(f"Loading {config.proxy} from cache...")
             with open(f"{proxy_cache_path}/{config.proxy}.pkl", "rb") as f:
                 scores = pickle.load(f)
-        if config.proxy_cache:
+        if config.proxy_cache and not os.path.exists(f"{proxy_cache_path}/{config.proxy}.pkl"):
             if not os.path.exists(proxy_cache_path):
                 os.makedirs(proxy_cache_path)
             with open(f"{proxy_cache_path}/{config.proxy}.pkl", "wb") as f:
