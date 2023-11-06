@@ -26,6 +26,7 @@ Help()
    echo "quora                        quora dataset (about 710KB)"
    echo "company                      company dataset (about 137MB)"
    echo "city_vehicle                 AICity Vehicle multi-camera multi-target tracking dataset (about 469MB)"
+   echo "city_vehicle_2               AICity Vehicle multi-camera multi-target tracking dataset two table version (about 336MB)"
 }
 
 twitter()
@@ -103,6 +104,26 @@ city_vehicle()
         echo -e "${RED}AICity vehicle multi-camera multi-target tracking dataset already exists under ${DIR}/city_vehicle/!"
 fi
 }
+
+city_vehicle_2()
+{
+    if [ ! -d "${DIR}/city_vehicle_2/" ];
+    then
+        echo "Downloading AICity vehicle multi-camera multi-target tracking dataset 2 tables (about 336MB)..."
+        gdown 1XXaffI1GqThu3ucvpMRJfpZrg22gTwxB
+
+        echo "Dataset downloaded, now decompressing..."
+        tar -xf ${DIR}/city_vehicle_2.tar -C ${DIR}
+
+        echo "Removing compressed file..."
+        rm -f ${DIR}/city_vehicle_2.tar
+
+        echo -e "${GREEN}AICity vehicle multi-camera multi-target tracking dataset downloaded!${NC}"
+    else
+        echo -e "${RED}AICity vehicle multi-camera multi-target tracking dataset already exists under ${DIR}/city_vehicle_2/!"
+fi
+}
+
 
 Download() {
     for data in $ARGS
