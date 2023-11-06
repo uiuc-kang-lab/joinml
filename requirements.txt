@@ -10,3 +10,4 @@ opencv-python
 opencv-contrib-python
 transformers
 gdown
+numba
