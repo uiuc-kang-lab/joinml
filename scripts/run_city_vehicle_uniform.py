@@ -5,7 +5,7 @@ import logging
 config = Config(
     dataset_name="city_vehicle_2",
     join_algorithm="naive_uniform",
-    is_self_join=True,
+    is_self_join=False,
     log_path="logs/city_vehicle_2-uniform.log",
     repeats=20
 )
