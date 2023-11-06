@@ -39,7 +39,7 @@ def run(config, scores: List[np.ndarray], ids: List[List[int]], oracle: Oracle):
     elif config.join_algorithm == "weighted_wander":
         return run_weighted_wander(scores, oracle, config, ids)
     elif config.join_algorithm == "ripple":
-        return run_ripple(scores, oracle, config, ids)
+        return run_ripple(oracle, config, ids)
     else:
         raise NotImplementedError(f"join method {config.join_algorithm} not implemented")
     
