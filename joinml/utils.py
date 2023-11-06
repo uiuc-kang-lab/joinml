@@ -6,6 +6,9 @@ import numpy as np
 import random
 from numba import jit
 import logging
+import sys
+
+csv.field_size_limit(sys.maxsize)
 
 def read_csv(path):
     """Read a CSV file."""
