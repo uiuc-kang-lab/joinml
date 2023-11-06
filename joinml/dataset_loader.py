@@ -17,6 +17,8 @@ class JoinDataset:
                 id2join_col_table[int(row[0])] = row[-1]
             id2join_col.append(id2join_col_table)
         self.id2join_col = id2join_col
+        self.dataset = config.dataset_name
+        self.path = f"{config.data_path}/{config.dataset_name}"
 
         
     def get_sizes(self):
@@ -27,11 +29,18 @@ class JoinDataset:
     
     def get_join_column_per_table(self, ids: List[List[int]]):
         join_column_per_table = []
-        for id2join_col_table, table_ids in zip(self.id2join_col, ids):
-            join_column = []
-            for Id in table_ids:
-                join_column.append(id2join_col_table[Id])
-            join_column_per_table.append(join_column)
+        if self.dataset in ["city_vehicle_2"]:
+            for i, table_ids in enumerate(ids):
+                join_column = []
+                for Id in table_ids:
+                    join_column.append(f"{self.path}/imgs/table{i}/{Id}.jpg")
+                join_column_per_table.append(join_column)
+        else:
+            for id2join_col_table, table_ids in zip(self.id2join_col, ids):
+                join_column = []
+                for Id in table_ids:
+                    join_column.append(id2join_col_table[Id])
+                join_column_per_table.append(join_column)
         return join_column_per_table
 
 
