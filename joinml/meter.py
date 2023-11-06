@@ -44,6 +44,10 @@ class ErrorMeter:
         logging.info(f"ErrorMeter reports average count errors {100*np.average(self.errors)}%")
         logging.info(f"ErrorMeter reports count errors std {np.std(self.errors)}")
 
-
+    def reset(self):
+        self.count_results = []
+        self.ci_uppers = []
+        self.ci_lower = []
+        self.errors = []
 
         
