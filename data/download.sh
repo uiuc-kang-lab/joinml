@@ -142,6 +142,9 @@ Download() {
             city_vehicle )
                 city_vehicle
                 ;;
+            city_vehicle_2 )
+                city_vehicle_2
+                ;;
         esac
     done
 }
