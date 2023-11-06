@@ -34,13 +34,17 @@ def normalize(x: np.ndarray, is_self_join: bool=False):
         # set diagonal to min
         x[np.diag_indices(x.shape[0])] = np.min(x)
     # normalize each row to [0, 1]
-    x -= np.min(x, axis=1, keepdims=True)
-    x /= np.max(x, axis=1, keepdims=True)
+    # x -= np.min(x, axis=1, keepdims=True)
+    # x /= np.max(x, axis=1, keepdims=True)
+    # normalize x to [0, 1]
+    x -= np.min(x)
+    x /= np.max(x)
     # avoid 0
     x[x==0] = np.min(x[x!=0])
 
     # normalize each row to sum 1
-    x /= np.sum(x, axis=1, keepdims=True)
+    # x /= np.sum(x, axis=1, keepdims=True)
+    x /= np.sum(x)
     return x
 
 def set_random_seed(seed):
