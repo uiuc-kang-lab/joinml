@@ -5,3 +5,8 @@ scipy
 tqdm
 py_stringmatching
 sentence_transformers
+torch
+opencv-python
+opencv-contrib-python
+transformers
+gdown
