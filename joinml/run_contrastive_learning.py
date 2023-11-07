@@ -1,6 +1,6 @@
 from joinml.config import Config
 from joinml.oracle import Oracle
-from joinml.proxy.embedding_proxy import TransformerProxy
+from joinml.proxy.text_embedding_proxy import TransformerProxy
 from joinml.sampling.training_data_sample import get_train_data
 from joinml.dataset_loader import JoinDataset
 from joinml.proxy.evaluation import Evaluator
