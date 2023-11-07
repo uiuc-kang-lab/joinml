@@ -56,6 +56,9 @@ def calculate_score_for_tuples(embeddings: np.ndarray) -> np.ndarray:
     scores = np.zeros(len(embeddings))
     for i in range(len(embeddings)):
         scores[i] = np.dot(embeddings[i][0], embeddings[i][1]) / (np.linalg.norm(embeddings[i][0]) * np.linalg.norm(embeddings[i][1]))
+    # normalize scores from -1, 1 to 0, 1
+    scores += 1
+    scores /= 2
     return scores
 
 @jit(nopython=True)
@@ -64,6 +67,9 @@ def calculate_scre_for_tables(embeddings1: np.ndarray, embeddings2: np.ndarray) 
     for i in range(len(embeddings1)):
         for j in range(len(embeddings2)):
             scores[i][j] = np.dot(embeddings1[i], embeddings2[j]) / (np.linalg.norm(embeddings1[i]) * np.linalg.norm(embeddings2[j]))
+    # normalize scores from -1, 1 to 0, 1
+    scores += 1
+    scores /= 2
     return scores
 
 def set_up_logging(log_file: str):

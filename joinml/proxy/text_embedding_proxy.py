@@ -21,9 +21,12 @@ class TextEmbeddingProxy(Proxy):
 
     def get_proxy_score_for_tuples(self, tuples: List[List[str]]) -> np.ndarray:
         embeddings = []
-        for t in tqdm(tuples):
-            embedding = self.model.encode(t)
-            embeddings.append(embedding)
+        left_tuples = [t[0] for t in tuples]
+        right_tuples = [t[1] for t in tuples]
+        left_embeddings = self.model.encode(left_tuples, device=self.device)
+        right_embeddings = self.model.encode(right_tuples, device=self.device)
+        for left_e, right_e in zip(left_embeddings, right_embeddings):
+            embeddings.append([left_e, right_e])
         scores = calculate_score_for_tuples(np.array(embeddings))
         return scores
     
@@ -63,7 +66,7 @@ if __name__ == "__main__":
     config = Config()
     config.proxy = "all-MiniLM-L6-v2"
     config.device = "mps"
-    proxy = TransformerProxy(config)
+    proxy = TextEmbeddingProxy(config)
 
     start = time.time()
     print(proxy.get_proxy_score_for_tables(table1, table2))

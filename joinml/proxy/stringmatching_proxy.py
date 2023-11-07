@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 
 available_proxy = {
-    "Affine",
+    # "Affine",
     "Bag Distance",
     "Cosine",
     "Dice",
@@ -20,12 +20,12 @@ available_proxy = {
     "Jaro Winkler",
     "Levenshtein",
     "Monge Elkan",
-    "Needleman Wunsch",
+    # "Needleman Wunsch",
     "Overlap Coefficient",
     "Partial Ratio",
     "Partial Token Sort",
     "Ratio",
-    "Smith Waterman",
+    # "Smith Waterman",
     "Soft TF/IDF",
     "Soundex",
     "TF/IDF",
@@ -40,10 +40,10 @@ class StringMatchingProxy(Proxy):
         self.tokenizer = None
         if proxy_name not in available_proxy:
             raise ValueError(f"Proxy {proxy_name} is not available.")
-        elif proxy_name == "Affine":
-            from py_stringmatching.similarity_measure.affine import Affine
-            self.proxy = Affine()
-            self.sim_func = self.proxy.get_raw_score
+        # elif proxy_name == "Affine":
+        #     from py_stringmatching.similarity_measure.affine import Affine
+        #     self.proxy = Affine()
+        #     self.sim_func = self.proxy.get_raw_score
         elif proxy_name == "Bag Distance":
             from py_stringmatching.similarity_measure.bag_distance import BagDistance
             self.proxy = BagDistance()
@@ -101,10 +101,10 @@ class StringMatchingProxy(Proxy):
             self.proxy = MongeElkan()
             self.tokenizer = AlphanumericTokenizer()
             self.sim_func = self.proxy.get_raw_score
-        elif proxy_name == "Needleman Wunsch":
-            from py_stringmatching.similarity_measure.needleman_wunsch import NeedlemanWunsch
-            self.proxy = NeedlemanWunsch()
-            self.sim_func = self.proxy.get_raw_score
+        # elif proxy_name == "Needleman Wunsch":
+        #     from py_stringmatching.similarity_measure.needleman_wunsch import NeedlemanWunsch
+        #     self.proxy = NeedlemanWunsch()
+        #     self.sim_func = self.proxy.get_raw_score
         elif proxy_name == "Overlap Coefficient":
             from py_stringmatching.similarity_measure.overlap_coefficient import OverlapCoefficient
             self.proxy = OverlapCoefficient()
@@ -122,10 +122,10 @@ class StringMatchingProxy(Proxy):
             from py_stringmatching.similarity_measure.ratio import Ratio
             self.proxy = Ratio()
             self.sim_func = self.proxy.get_sim_score
-        elif proxy_name == "Smith Waterman":
-            from py_stringmatching.similarity_measure.smith_waterman import SmithWaterman
-            self.proxy = SmithWaterman()
-            self.sim_func = self.proxy.get_raw_score
+        # elif proxy_name == "Smith Waterman":
+        #     from py_stringmatching.similarity_measure.smith_waterman import SmithWaterman
+        #     self.proxy = SmithWaterman()
+        #     self.sim_func = self.proxy.get_raw_score
         elif proxy_name == "Soft TF/IDF":
             from py_stringmatching.similarity_measure.soft_tfidf import SoftTfIdf
             self.proxy = SoftTfIdf()
