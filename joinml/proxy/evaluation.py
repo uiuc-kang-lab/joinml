@@ -7,37 +7,35 @@ from joinml.utils import normalize
 
 from itertools import product
 import numpy as np
-import logging
-from tqdm import tqdm
+import random
 
 class Evaluator:
-    def __init__(self, config: Config, dataset: JoinDataset, oracle: Oracle):
+    def __init__(self, config: Config, dataset: JoinDataset):
         self.config = config
-        self.eval_data_ids, self.eval_data_per_table = get_evaluation_data(config, dataset)
-        self.positive_labels = set()
-        self.is_self_join = config.is_self_join
-        self.normalizing_factor = 1. / len(list(product(*self.eval_data_ids)))
-        for row in tqdm(product(*self.eval_data_ids)):
-            if oracle.query(row):
-                self.positive_labels.add(row)
-        num_rows = np.prod([len(ids) for ids in self.eval_data_ids])
-        logging.info(f"positive rate of the evaluation data: {len(self.positive_labels) / num_rows}")        
-        self.intrinsic_variance = np.var([1. for _ in range(len(self.positive_labels))] + [0. for _ in range(num_rows - len(self.positive_labels))])
-
-    def evaluate(self, proxy: Proxy):
-        if len(self.eval_data_per_table) == 2:
-            scores = proxy.get_proxy_score_for_tables(self.eval_data_per_table[0], self.eval_data_per_table[1])
-            scores = normalize(scores, is_self_join=self.is_self_join)
-            assert np.abs(np.sum(scores) - 1) < 1e-5, f"{np.sum(scores)}"
-            results = []
-            for i in range(len(self.eval_data_ids[0])):
-                for j in range(len(self.eval_data_ids[1])):
-                    row = (self.eval_data_ids[0][i], self.eval_data_ids[1][j])
-                    if row in self.positive_labels:
-                        results.append(self.normalizing_factor/scores[i,j])
-                    else:
-                        results.append(0.)
-            results = np.array(results)
-            return (self.intrinsic_variance - np.var(results)) / self.intrinsic_variance
+        if config.proxy_eval_data_sample_method == "random":
+            ids = dataset.get_ids()
+            if config.is_self_join:
+                ids = [ids[0], ids[0]]
+            all_tuples = list(product(*ids))
+            sampled_tuples = random.sample(all_tuples, config.proxy_eval_data_sample_size)
+            if config.is_self_join:
+                self.sampled_ids = [[t[0], t[1]] for t in sampled_tuples if t[0] != t[1]]
+                self.samples = [[dataset.id2join_col[0][t[0]], dataset.id2join_col[0][t[1]]] for t in self.sampled_ids]
+            else:
+                self.samples = []
+                for t in sampled_tuples:
+                    self.samples.append([dataset.id2join_col[i][t[i]] for i in range(len(t))])
         else:
-            raise NotImplementedError("Not implemented yet.")
+            raise NotImplementedError(f"Sampler {config.proxy_eval_data_sample_method} is not implemented yet.")
+
+    def evaluate(self, proxy: Proxy, oracle: Oracle):
+        scores = proxy.get_proxy_score_for_tuples(self.samples)
+        mse = .0
+        for score, sample in zip(scores, self.sampled_ids):
+            assert score >= 0 and score <= 1
+            if oracle.query(sample):
+                mse += (score - 1.) ** 2
+            else:
+                mse += score ** 2
+        mse /= len(self.samples)
+        return mse
