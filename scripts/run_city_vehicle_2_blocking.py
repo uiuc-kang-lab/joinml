@@ -5,11 +5,12 @@ import logging
 config = Config(
     dataset_name="city_vehicle_2",
     join_algorithm="naive_importance",
-    proxy="infomin",
+    proxy="pHash",
     is_self_join=False,
-    log_path="logs/city_vehicle-blocking_infomin.log",
+    log_path="logs/city_vehicle-blocking_pHash.log",
     repeats=20,
-    proxy_cache=True
+    proxy_cache=True,
+    device="cpu"
 )
 
 run(config)
