@@ -2,7 +2,7 @@ from joinml.proxy.get_proxy import get_proxy
 from joinml.dataset_loader import JoinDataset
 from joinml.oracle import Oracle
 from joinml.config import Config
-from joinml.utils import set_up_logging
+from joinml.utils import set_up_logging, normalize
 
 import numpy as np
 import logging
@@ -20,6 +20,7 @@ def run(config: Config):
         dataset_ids = [dataset_ids[0], dataset_ids[0]]
         join_cols = [join_cols[0], join_cols[0]]
     scores = proxy.get_proxy_score_for_tables(join_cols[0], join_cols[1])
+    scores = normalize(scores, is_self_join=config.is_self_join)
     flattened_scores = scores.flatten()
     sorted_indexes = flattened_scores.argsort()
     budgets = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000, 10000000]

@@ -13,6 +13,8 @@ import logging
 def run(config: Config):
     # get available proxy
     available_proxy = modality2proxy[dataset2modality[config.dataset_name]]
+    # temporary TODO
+    available_proxy = available_proxy[available_proxy.index('TF/IDF')+1:]
     # set up
     set_up_logging(config.log_path)
     set_random_seed(config.seed)
@@ -41,12 +43,12 @@ def run(config: Config):
                     score = proxy.get_proxy_score_for_tables(dataset_join_cols[i-1], dataset_join_cols[i])
                     scores.append(normalize(score))
                 assert len(scores) == len(dataset_join_cols) - 1
+            # run join
+            results = run_join(config, scores, dataset_ids, oracle)
         except Exception as e:
             logging.error(f"Error running {proxy_name}: {e}")
             continue
         
-        # run join
-        results = run_join(config, scores, dataset_ids, oracle)
         # report
         for result in results:
             error_meter.add_results(result)

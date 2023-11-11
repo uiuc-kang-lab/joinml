@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import time
 
 @dataclass
@@ -30,3 +30,8 @@ class Config:
     head: str = "mlp"
     temp: float = 0.07
     epoch: int = 10
+
+    # proxy blocking
+    lower_sample_size: int = 100000
+    upper_sample_size: int = 100000 
+    dataset_cutoff: int = 100000

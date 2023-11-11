@@ -6,7 +6,7 @@ from joinml.proxy.proxy import Proxy
 from joinml.utils import normalize
 
 from itertools import product
-import numpy as np
+import logging
 import random
 
 class Evaluator:
@@ -23,8 +23,10 @@ class Evaluator:
                 self.samples = [[dataset.id2join_col[0][t[0]], dataset.id2join_col[0][t[1]]] for t in self.sampled_ids]
             else:
                 self.samples = []
+                self.sampled_ids = sampled_tuples
                 for t in sampled_tuples:
                     self.samples.append([dataset.id2join_col[i][t[i]] for i in range(len(t))])
+                
         else:
             raise NotImplementedError(f"Sampler {config.proxy_eval_data_sample_method} is not implemented yet.")
 
@@ -32,8 +34,9 @@ class Evaluator:
         scores = proxy.get_proxy_score_for_tuples(self.samples)
         mse = .0
         for score, sample in zip(scores, self.sampled_ids):
-            assert score >= 0 and score <= 1
+            assert score >= 0 and score <= 1, score
             if oracle.query(sample):
+                logging.info("sample hit")
                 mse += (score - 1.) ** 2
             else:
                 mse += score ** 2

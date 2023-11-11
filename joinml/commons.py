@@ -2,7 +2,8 @@ dataset2modality = {
     "twitter": "text",
     "quora": "text",
     "company": "text",
-    "city_vehicle": "image"
+    "city_vehicle": "image",
+    "city_vehicle_2": "image"
 }
 
 kind2proxy = {

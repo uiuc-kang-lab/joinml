@@ -21,7 +21,7 @@ def _hist_process(path: str):
     return hist
 
 def _calculate_hist_comp(hist1: np.ndarray, hist2: np.ndarray):
-    return cv.compareHist(hist1, hist2, cv.HISTCMP_CORREL)
+    return (cv.compareHist(hist1, hist2, cv.HISTCMP_CORREL) + 1) / 2
 
 def _phash_process(path: str):
     img = cv.imread(path)
@@ -64,7 +64,7 @@ class OpencvProxy(Proxy):
         scores = np.zeros((len(hist1), len(hist2)))
         for i in range(len(hist1)):
             for j in range(len(hist2)):
-                scores[i][j] = self.sim_func(hist1[i], hist2[i])
+                scores[i][j] = self.sim_func(hist1[i], hist2[j])
         return scores
 
     """

@@ -10,15 +10,18 @@ class JoinDataset:
         for table_file in table_files:
             table_data = read_csv(table_file)
             self.tables.append(table_data)
-        id2join_col = []
-        for table in self.tables:
-            id2join_col_table = {}
-            for row in table:
-                id2join_col_table[int(row[0])] = row[-1]
-            id2join_col.append(id2join_col_table)
-        self.id2join_col = id2join_col
         self.dataset = config.dataset_name
         self.path = f"{config.data_path}/{config.dataset_name}"
+        id2join_col = []
+        for i, table in enumerate(self.tables):
+            id2join_col_table = {}
+            for row in table:
+                if self.dataset in ["city_vehicle_2"]:
+                    id2join_col_table[int(row[0])] = f"{self.path}/imgs/table{i}/{row[0]}.jpg"
+                else:
+                    id2join_col_table[int(row[0])] = row[-1]
+            id2join_col.append(id2join_col_table)
+        self.id2join_col = id2join_col
 
         
     def get_sizes(self):
