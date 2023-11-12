@@ -22,10 +22,10 @@ Help()
 
    echo
    echo "======= Available datasets ======="
-   echo "twitter                      twitter dataset (about 3.0MB)"
-   echo "quora                        quora dataset (about 710KB)"
-   echo "quora_3500                   quora first 3500 rows with proxy (about 93.7MB)"
-   echo "company                      company dataset (about 137MB)"
+   echo "twitter                      twitter dataset (about 10.3MB)"
+   echo "quora                        quora dataset (about 4.9MB)"
+   echo "stackoverflow                stackoverflow dataset (about 51.6MB)"
+   echo "company                      company dataset (about 129.5MB)"
    echo "city_vehicle                 AICity Vehicle multi-camera multi-target tracking dataset (about 469MB)"
    echo "city_vehicle_2               AICity Vehicle multi-camera multi-target tracking dataset two table version (about 336MB)"
 }
@@ -34,7 +34,7 @@ twitter()
 {
     if [ ! -d "${DIR}/twitter/" ];
     then
-        echo "Downloading twitter dataset(about 3.0MB)..."
+        echo "Downloading twitter dataset(about 10.3MB)..."
         gdown 1VY3wFFRaRqR1HqwmTkPHwWb-DZpocFce
 
         echo "Dataset downloaded, now decompressing..."
@@ -53,7 +53,7 @@ quora()
 {
     if [ ! -d "${DIR}/quora/" ];
     then
-        echo "Downloading quora dataset(about 720KB)..."
+        echo "Downloading quora dataset(about 4.9MB)..."
         gdown 1ztcRe6iIbGrwCuWC4p_Pfwu1R832ntAy
 
         echo "Dataset downloaded, now decompressing..."
@@ -68,22 +68,22 @@ quora()
 fi
 }
 
-quora_3500()
+stackoverflow()
 {
-    if [ ! -d "${DIR}/quora_3500/" ];
+    if [ ! -d "${DIR}/stackoverflow/" ];
     then
-        echo "Downloading quora_3500 dataset(about 720KB)..."
-        gdown 1zwwNOgrKtfXL4CIL_b32qSFwoKvqS1HY
+        echo "Downloading stackoverflow dataset(about 51.6MB)..."
+        gdown 1m6DUQdXrAjT-ku2ppB5gV4TEGf6t_K5N
 
         echo "Dataset downloaded, now decompressing..."
-        tar -xf ${DIR}/quora_3500.tar -C ${DIR}
+        tar -xf ${DIR}/stackoverflow.tar -C ${DIR}
 
         echo "Removing compressed file..."
-        rm -f ${DIR}/quora_3500.tar
+        rm -f ${DIR}/stackoverflow.tar
 
-        echo -e "${GREEN}quora_3500 dataset downloaded!${NC}"
+        echo -e "${GREEN}stackoverflow dataset downloaded!${NC}"
     else
-        echo -e "${RED}quora_3500 dataset already exists under ${DIR}/quora_3500/!"
+        echo -e "${RED}stackoverflow dataset already exists under ${DIR}/stackoverflow/!"
 fi
 }
 
@@ -156,8 +156,8 @@ Download() {
             quora )
                 quora
                 ;;
-            quora_3500 )
-                quora_3500
+            stackoverflow )
+                stackoverflow
                 ;;
             company )
                 company
@@ -190,8 +190,6 @@ Remove() {
             city_vehicle )
                 rm -rf  ${DIR}/$data;
                 ;;
-            quora_3500 )
-                rm -rf  ${DIR}/$data;
         esac
     done
 }
