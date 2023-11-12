@@ -30,10 +30,13 @@ class TextEmbeddingProxy(Proxy):
         scores = calculate_score_for_tuples(np.array(embeddings))
         return scores
     
-    def get_proxy_score_for_tables(self, table1: List[str], table2: List[str]) -> np.ndarray:
+    def get_proxy_score_for_tables(self, table1: List[str], table2: List[str], is_self_join: bool=False) -> np.ndarray:
         embeddings1 = self.model.encode(table1, device=self.device)
-        embeddings2 = self.model.encode(table2, device=self.device)
-        scores = calculate_scre_for_tables(embeddings1, embeddings2)
+        if is_self_join:
+            scores = calculate_scre_for_tables(embeddings1, embeddings1)
+        else:
+            embeddings2 = self.model.encode(table2, device=self.device)
+            scores = calculate_scre_for_tables(embeddings1, embeddings2)
         return scores
 
 if __name__ == "__main__":

@@ -19,20 +19,28 @@ def run(config: Config):
     if config.is_self_join:
         dataset_ids = [dataset_ids[0], dataset_ids[0]]
         join_cols = [join_cols[0], join_cols[0]]
-    scores = proxy.get_proxy_score_for_tables(join_cols[0], join_cols[1])
-    scores = normalize(scores, is_self_join=config.is_self_join)
-    flattened_scores = scores.flatten()
-    sorted_indexes = flattened_scores.argsort()
-    budgets = [1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000, 10000000]
-    for budget in budgets:
-        unblocked_indexes = sorted_indexes[-budget:]
-        unblocked_ids = np.unravel_index(unblocked_indexes, scores.shape)
-        unblocked_ids = np.array(unblocked_ids).T
-        unblocked_table_ids = [[dataset_ids[0][unblocked_ids[i][0]], dataset_ids[1][unblocked_ids[i][1]]] for i in range(len(unblocked_ids))]
-        # run oracle
-        count = 0
-        for table_ids in unblocked_table_ids:
-            if oracle.query(table_ids):
-                count += 1
-        logging.info(f"Budget: {budget}, Count: {count}")
+    dataset_shape = [len(dataset_id) for dataset_id in dataset_ids]
+    scores = proxy.get_proxy_score_for_tables(join_cols[0], join_cols[1], is_self_join=config.is_self_join)
+    logging.info("preprocessing")
+    if config.is_self_join:
+        assert len(scores.shape) == 2 and scores.shape[0] == scores.shape[1]
+        # set diagonal to min
+        scores[np.diag_indices(scores.shape[0])] = np.min(scores)
+    logging.info("flattening")
+    scores = scores.flatten()
+    logging.info("sorting")
+    sorted_indexes = scores.argsort()
+    np.save("sorted_flatten_index.npy", sorted_indexes)
+    sorted_indexes = np.flip(sorted_indexes)
+    count = 0
+    groundtruth = len(oracle.oracle_labels)
+    for blocking_budget, flatten_index in enumerate(sorted_indexes):
+        index = np.array(np.unravel_index(flatten_index, dataset_shape)).T
+        index = index.tolist()
+        if oracle.query(index):
+            count += 1
+        logging.info(f"Budget: {blocking_budget+1}, Index: {index}, Score: {scores[flatten_index]}, Positive pairs: {count}")
+        if count == groundtruth:
+            break
+
         
