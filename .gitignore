@@ -3,10 +3,10 @@
 **/__pycache__
 **/logs
 data/city_vehicle*
-data/company
-data/quora
-data/twitter
+data/company*
+data/quora*
+data/twitter*
 data/quora_3500
-data/stackoverflow
+data/stackoverflow*
 archive
 **/model_cache

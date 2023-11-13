@@ -28,6 +28,10 @@ Help()
    echo "company                      company dataset (about 129.5MB)"
    echo "city_vehicle                 AICity Vehicle multi-camera multi-target tracking dataset (about 469MB)"
    echo "city_vehicle_2               AICity Vehicle multi-camera multi-target tracking dataset two table version (about 336MB)"
+   echo "======= Available models ========="
+   echo "twitter_minilm                 finetuned bi-encoder for twitter dataset with minilm l6 v2 (about 79.7MB)"
+   echo "quora_minilm                   finetuned bi-encoder for quora dataset with minilm l6 v2 (about 79.7MB)"
+   echo "company_minilm                 finetuned bi-encoder for company dataset with minilm l6 v2 (about 79.7MB)"
 }
 
 twitter()
@@ -144,6 +148,44 @@ city_vehicle_2()
 fi
 }
 
+quora_minilm()
+{
+    if [ ! -d "${DIR}/quora-MiniLM-L6-v2/" ];
+    then
+        echo "Downloading finetuned model for quora (about 79.9MB)..."
+        gdown 1ch9xDDnLWkx0TcIsK1ckRcWfK3h-10Oj
+
+        echo "Dataset downloaded, now decompressing..."
+        unzip ${DIR}/quora-MiniLM-L6-v2.zip
+
+        echo "Removing compressed file..."
+        rm -f ${DIR}/quora-MiniLM-L6-v2.zip
+
+        echo -e "${GREEN}Finetuned model for quora downloaded!${NC}"
+    else
+        echo -e "${RED}Finetuned model for quora already exists under ${DIR}/quora-MiniLM-L6-v2/!"
+fi
+}
+
+twitter_minilm()
+{
+    if [ ! -d "${DIR}/twitterall-MiniLM-L6-v2/" ];
+    then
+        echo "Downloading finetuned model for twitter (about 79.9MB)..."
+        gdown 1Fxw7xPMKhOtlMvjXnIOoJy1jvMH8B6Hi
+
+        echo "Dataset downloaded, now decompressing..."
+        unzip ${DIR}/twitterall-MiniLM-L6-v2.zip
+
+        echo "Removing compressed file..."
+        rm -f ${DIR}/twitterall-MiniLM-L6-v2.zip
+
+        echo -e "${GREEN}Finetuned model for twitter downloaded!${NC}"
+    else
+        echo -e "${RED}Finetuned model for twitter already exists under ${DIR}/twitterall-MiniLM-L6-v2/!"
+fi
+}
+
 
 Download() {
     for data in $ARGS
@@ -167,6 +209,12 @@ Download() {
                 ;;
             city_vehicle_2 )
                 city_vehicle_2
+                ;;
+            quora_minilm )
+                quora_minilm
+                ;;
+            twitter_minilm )
+                twitter_minilm
                 ;;
         esac
     done
