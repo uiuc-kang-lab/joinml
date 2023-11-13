@@ -7,5 +7,6 @@ data/company
 data/quora
 data/twitter
 data/quora_3500
+data/stackoverflow
 archive
 **/model_cache
