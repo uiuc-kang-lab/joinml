@@ -19,6 +19,8 @@ def get_proxy(config: Config):
         return StringMatchingProxy(config)
     elif config.proxy in kind2proxy["opencv"]:
         return OpencvProxy(config)
+    elif config.proxy.startswith("data/"):
+        return TextEmbeddingProxy(config)
     else:
         raise NotImplementedError(f"Proxy {config.proxy} not implemented.")
     
