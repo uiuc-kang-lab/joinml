@@ -37,6 +37,8 @@ def run(config: Config):
                     results.append(0.)
             
             results = np.array(results)
+            if sum(results) == 0:
+                continue
             ttest = stats.ttest_1samp(results, popmean=np.average(results))
             upper_bound = ttest.confidence_interval(confidence_level=config.confidence_level).high
             upper_bound_count = upper_bound * np.prod(dataset_sizes)
