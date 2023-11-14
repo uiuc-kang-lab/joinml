@@ -36,3 +36,9 @@ class Config:
     upper_sample_size: int = 100000 
     dataset_cutoff: int = 100000
     cached_blocking: bool = False
+    
+    # path
+    large_data_path: str = "."
+
+    # special
+    enable_remap: bool = True

@@ -32,6 +32,7 @@ Help()
    echo "twitter_minilm                 finetuned bi-encoder for twitter dataset with minilm l6 v2 (about 79.7MB)"
    echo "quora_minilm                   finetuned bi-encoder for quora dataset with minilm l6 v2 (about 79.7MB)"
    echo "company_minilm                 finetuned bi-encoder for company dataset with minilm l6 v2 (about 79.7MB)"
+   echo "stackoverflow_proxy            finetuned bi-encoder for stackoverflow dataset (about 87.6MB)"
 }
 
 twitter()
@@ -186,6 +187,25 @@ twitter_minilm()
 fi
 }
 
+stackoverflow_proxy()
+{
+    if [ ! -d "${DIR}/stackoverflow_proxy/" ];
+    then
+        echo "Downloading finetuned model for stackoverflow (about 79.9MB)..."
+        gdown 1JlP7mnZaM7gb96Q8ZNy8ivflAm5zS93G
+
+        echo "Dataset downloaded, now decompressing..."
+        tar -xf ${DIR}/stackoverflow_proxy.tar -C ${DIR}
+
+        echo "Removing compressed file..."
+        rm -f ${DIR}/stackoverflow_proxy.tar
+
+        echo -e "${GREEN}Finetuned model for stackoverflow downloaded!${NC}"
+    else
+        echo -e "${RED}Finetuned model for stackoverflow already exists under ${DIR}/stackoverflow_proxy/!"
+fi
+}
+
 
 Download() {
     for data in $ARGS
@@ -215,6 +235,9 @@ Download() {
                 ;;
             twitter_minilm )
                 twitter_minilm
+                ;;
+            stackoverflow_proxy )
+                stackoverflow_proxy
                 ;;
         esac
     done
