@@ -30,6 +30,7 @@ def run(config: Config):
         # load scores
         logging.info("loading proxy")
         scores = np.load(f"{config.large_data_path}/{config.dataset_name}_proxy.npy")
+        scores = np.array(scores).astype(np.float32)
     else:
         # call proxy to get scores
         logging.info("calculating proxy scores")
@@ -56,11 +57,13 @@ def run(config: Config):
         # sort scores
         logging.info("sorting proxy scores")
         sorted_indexes = scores.argsort()
+        sorted_indexes = np.array(sorted_indexes).astype(np.int32)
         np.save(f"./cache/{config.dataset_name}_blocking.npy", sorted_indexes)
     else:
         # load sorted scores
         logging.info("loading sorted indexes")
         sorted_indexes = np.load(f"./cache/{config.dataset_name}_blocking.npy")
+        sorted_indexes = np.array(sorted_indexes).astype(np.int32)
 
     for cutoff in config.dataset_cutoff:
         # get constants for the cutoff
@@ -126,6 +129,12 @@ def run(config: Config):
                             results.append(1 / len(lower_dataset_score) / lower_dataset_score[lower_sample])
                         else:
                             results.append(0)
+                    results = np.array(results)
+                    mean = np.average(results)
+                    count_result = mean * len(lower_dataset_score)
+                    true_error = np.abs(count_result - lower_data_gt)
+                    amortised_error_rate = true_error / (lower_data_gt + upper_data_gt)
+                    logging.info(f"sample count result: {count_result} true error: {true_error} amortised error rate: {amortised_error_rate}")
                     if sum(results) != 0:
                         ttest = stats.ttest_1samp(results, popmean=np.average(results))
                         ci_high = ttest.confidence_interval(confidence_level=config.confidence_level).high
