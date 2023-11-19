@@ -7,6 +7,7 @@ import random
 from numba import jit
 import logging
 import sys
+from scipy import stats
 
 csv.field_size_limit(sys.maxsize)
 
@@ -27,24 +28,23 @@ def divide_sample_size(sample_size: int, table_sizes: List[int]):
 def get_sentence_transformer(model_name: str="all-MiniLM-L6-v2") -> SentenceTransformer:
     return SentenceTransformer(model_name)
 
-def normalize(x: np.ndarray, is_self_join: bool=False):
+
+"""
+avoid select duplicate in self join
+avoid scores out of the range of [0,1]
+"""
+def preprocess(x: np.ndarray, is_self_join: bool=False):
     # avoid select duplicate
     if is_self_join:
         assert len(x.shape) == 2 and x.shape[0] == x.shape[1]
         # set diagonal to min
-        x[np.diag_indices(x.shape[0])] = np.min(x)
-    # normalize each row to [0, 1]
-    # x -= np.min(x, axis=1, keepdims=True)
-    # x /= np.max(x, axis=1, keepdims=True)
-    # normalize x to [0, 1]
-    x -= np.min(x)
-    x /= np.max(x)
-    # avoid 0
-    x[x==0] = np.min(x[x!=0])
+        x[np.diag_indices(x.shape[0])] = 0
 
-    # normalize each row to sum 1
-    # x /= np.sum(x, axis=1, keepdims=True)
-    x /= np.sum(x)
+    if np.min(x) < 0:
+        x -= np.min(x)
+    if np.max(x) > 1:
+        x /= np.max(x)
+
     return x
 
 def set_random_seed(seed):
@@ -81,3 +81,38 @@ def set_up_logging(log_file: str):
         filemode="a+",
         force=True
     )
+
+
+def get_ci_gaussian(data, confidence_level=0.95):
+    """Get the confidence interval of the data using Gaussian."""
+    mean = np.average(data)
+    std = np.std(data)
+    n = len(data)
+    z = stats.norm.ppf(1 - (1 - confidence_level) / 2)
+    return mean - z * std / np.sqrt(n), mean + z * std / np.sqrt(n)
+
+def get_ci_ttest(data, confidence_level=0.95):
+    """Get the confidence interval of the data using ttest."""
+    mean = np.average(data)
+    std = np.std(data)
+    n = len(data)
+    t = stats.ttest_1samp(data, popmean=mean)
+    confidence_interval = t.confidence_interval(confidence_level=confidence_level)
+    return confidence_interval.low, confidence_interval.high
+
+def normalize(array: np.ndarray, style="proportional"):
+    if style == "proportional":
+        array /= np.sum(array)
+    elif style == "sqrt":
+        array = np.sqrt(array)
+        array /= np.sum(array)
+    else:
+        raise NotImplementedError(f"Style {style} not implemented.")
+    return array
+
+def defensive_mix(weights, ratio: float, mixture: str="random"):
+    if mixture == "random":
+        weights = (1-ratio) * weights + ratio * 1/len(weights)
+    else:
+        raise NotImplementedError(f"Defensive mixture {mixture} not implemented.")
+    return weights
