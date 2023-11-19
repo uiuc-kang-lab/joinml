@@ -11,3 +11,4 @@ sudo apt-get install -y libgl1
 conda install -y python=3.10.12
 pip install -r requirements.txt
 pip install -e .
+mkdir logs
