@@ -69,9 +69,9 @@ def run(config: Config):
             true_error = (count_result - gt) / gt
             # get estimated confidence interval
             if count_result != 0:
-                gaussian_upper, _ = get_ci_gaussian(results, config.confidence)
+                gaussian_upper, _ = get_ci_gaussian(results, config.confidence_level)
                 gaussian_upper_error = (gaussian_upper - gt) / gt
-                ttest_upper, _ = get_ci_ttest(results, config.confidence)
+                ttest_upper, _ = get_ci_ttest(results, config.confidence_level)
                 ttest_upper_error = (ttest_upper - gt) / gt
                 gaussian_upper_errors.append(gaussian_upper_error)
                 ttest_upper_errors.append(ttest_upper_error)
