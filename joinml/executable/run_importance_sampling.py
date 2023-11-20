@@ -76,8 +76,8 @@ def run(config: Config):
                 gaussian_upper_errors.append(gaussian_upper_error)
                 ttest_upper_errors.append(ttest_upper_error)
                 logging.info(f"sample size {sample_size} trial {i} count result {count_result} true error {true_error} gaussian upper {gaussian_upper} gaussian upper error {gaussian_upper_error} ttest upper {ttest_upper} ttest upper error {ttest_upper_error}")
-
-            logging.info(f"sample size {sample_size} trial {i} count result {count_result} true error {true_error}")
+            else:
+                logging.info(f"sample size {sample_size} trial {i} count result {count_result} true error {true_error}")
             count_results.append(count_result)
             true_errors.append(true_error)
 
