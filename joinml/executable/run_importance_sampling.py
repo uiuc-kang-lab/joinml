@@ -17,6 +17,8 @@ def run(config: Config):
 
     # setup dataset
     dataset_sizes = dataset.get_sizes()
+    if config.is_self_join:
+        dataset_sizes = [dataset_sizes[0], dataset_sizes[0]]
     gt = len(oracle.oracle_labels)
 
     logging.info(f"ground truth: {gt}")
