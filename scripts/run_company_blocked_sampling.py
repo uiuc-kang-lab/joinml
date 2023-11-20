@@ -1,17 +1,18 @@
-from joinml.executable.run_blocked_sampling import run
+from joinml.executable.run_blocked_importance_sampling import run
 from joinml.config import Config
 import logging
 
 config = Config(
     dataset_name="company",
-    join_algorithm="naive_importance",
     proxy="all-MiniLM-L6-v2",
     is_self_join=False,
     log_path="logs/company-blocking_sampling.log",
     repeats=20,
-    proxy_cache=True,
     device="cpu",
-    blocking_budget=100000
+    cache_path="/mydata/yuxuan",
+    proxy_score_cache=True,
+    sample_size=[5000000, 2500000, 1000000, 750000, 500000, 250000, 100000],
+    blocking_size=[1000000, 500000, 100000, 50000, 10000]
 )
 
 run(config)

@@ -44,14 +44,14 @@ def run(config: Config):
 
     # check cache for proxy rank
     proxy_rank_store_path = f"{config.cache_path}/{config.dataset_name}_{config.proxy.split('/')[-1]}_rank.npy"
-    if config.proxy_rank_cache and os.path.exists(proxy_rank_store_path):
+    if config.blocking_cache and os.path.exists(proxy_rank_store_path):
         logging.info("Loading proxy rank from %s", proxy_rank_store_path)
         proxy_rank = np.load(proxy_rank_store_path)
         assert np.prod(proxy_rank.shape) == np.prod(dataset_sizes), "Proxy rank shape does not match dataset sizes."
     else:
         logging.info("Calculating proxy rank.")
         proxy_rank = np.argsort(proxy_scores)
-        if config.proxy_rank_cache:
+        if config.blocking_cache:
             logging.info("Saving proxy rank to %s", proxy_rank_store_path)
             np.save(proxy_rank_store_path, proxy_rank)
 
@@ -65,7 +65,7 @@ def run(config: Config):
         unblocked_samples = proxy_rank[-blocking_size:]
         blocked_samples = proxy_rank[:-blocking_size]
         blocked_proxy_scores = proxy_scores[blocked_samples]
-        blocked_proxy_scores = normalize(blocked_proxy_scores, style=config.proxy_score_normalize_style)
+        blocked_proxy_scores = normalize(blocked_proxy_scores, style=config.proxy_normalizing_style)
         blocked_proxy_scores = defensive_mix(blocked_proxy_scores, ratio=config.defensive_rate)
 
         # run oracle on the unblocked samples
@@ -83,8 +83,9 @@ def run(config: Config):
             gaussian_upper_errors = []
             ttest_upper_errors = []
             for i in range(config.repeats):
-                samples = np.random.choice(blocked_samples, size=sample_size, replace=True, p=blocked_proxy_scores)
-                samples_table_ids = np.array(np.unravel_index(samples, dataset_sizes)).T
+                samples = np.random.choice(len(blocked_samples), size=sample_size, replace=True, p=blocked_proxy_scores)
+                sample_ids = blocked_samples[samples]
+                samples_table_ids = np.array(np.unravel_index(sample_ids, dataset_sizes)).T
                 results = [] 
                 for sample_table_id, sample in zip(samples_table_ids, samples):
                     if oracle.query(sample_table_id):
@@ -97,17 +98,19 @@ def run(config: Config):
                 true_error = (count_result + unblocked_positives - gt) / gt
                 # get estimated confidence interval
                 if count_result != 0:
-                    gaussian_upper, _ = get_ci_gaussian(results, config.confidence)
+                    _, gaussian_upper = get_ci_gaussian(results, config.confidence_level)
+                    gaussian_upper *= len(blocked_samples)
                     gaussian_upper_error = (gaussian_upper + unblocked_positives - gt) / gt
-                    ttest_upper, _ = get_ci_ttest(results, config.confidence)
+                    _, ttest_upper = get_ci_ttest(results, config.confidence_level)
+                    ttest_upper *= len(blocked_samples)
                     ttest_upper_error = (ttest_upper + unblocked_positives - gt) / gt
                     gaussian_upper_errors.append(gaussian_upper_error)
                     ttest_upper_errors.append(ttest_upper_error)
-                    logging.info(f"sample size {sample_size} trial {i} count result {count_result} true error {true_error} gaussian upper {gaussian_upper} gaussian upper error {gaussian_upper_error} ttest upper {ttest_upper} ttest upper error {ttest_upper_error}")
+                    logging.info(f"sample size {sample_size} trial {i} count result {count_result + unblocked_positives} true error {true_error} gaussian upper {gaussian_upper} gaussian upper error {gaussian_upper_error} ttest upper {ttest_upper} ttest upper error {ttest_upper_error}")
                 else:
-                    logging.info(f"sample size {sample_size} trial {i} count result {count_result} true error {true_error}")
+                    logging.info(f"sample size {sample_size} trial {i} count result {count_result + unblocked_positives} true error {true_error}")
                 
-                count_results.append(count_result)
+                count_results.append(count_result+unblocked_positives)
                 true_errors.append(true_error)
 
             average_count_result = np.mean(count_results)
