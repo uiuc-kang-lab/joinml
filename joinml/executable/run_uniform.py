@@ -33,8 +33,8 @@ def run(config: Config):
         gaussian_upper_errors = []
         ttest_upper_errors = []
         for i in range(config.repeats):
-            # samples = np.random.choice(full_size, size=sample_size, replace=True)
-            samples = random.choices(list(range(full_size)), k=sample_size)
+            samples = np.random.choice(full_size, size=sample_size, replace=True)
+            # samples = random.choices(list(range(full_size)), k=sample_size)
             samples_table_ids = np.array(np.unravel_index(samples, dataset_sizes)).T
             results = [] 
             for sample_table_id in samples_table_ids:
