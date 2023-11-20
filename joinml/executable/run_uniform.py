@@ -4,6 +4,7 @@ from joinml.config import Config
 from joinml.utils import set_up_logging, get_ci_gaussian, get_ci_ttest
 
 import numpy as np
+import random
 from scipy import stats
 import logging
 
@@ -32,7 +33,8 @@ def run(config: Config):
         gaussian_upper_errors = []
         ttest_upper_errors = []
         for i in range(config.repeats):
-            samples = np.random.choice(full_size, size=sample_size, replace=True)
+            # samples = np.random.choice(full_size, size=sample_size, replace=True)
+            samples = random.choices(list(range(full_size)), k=sample_size)
             samples_table_ids = np.array(np.unravel_index(samples, dataset_sizes)).T
             results = [] 
             for sample_table_id in samples_table_ids:
