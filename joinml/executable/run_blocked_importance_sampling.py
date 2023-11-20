@@ -11,6 +11,9 @@ import os
 def run(config: Config):
     set_up_logging(config.log_path)
 
+    # log config
+    logging.info(config)
+
     # dataset, oracle
     dataset = JoinDataset(config)
     oracle = Oracle(config)
