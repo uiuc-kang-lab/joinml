@@ -60,7 +60,7 @@ def run(config: Config):
             results = [] 
             for sample_table_id, sample in zip(samples_table_ids, samples):
                 if oracle.query(sample_table_id):
-                    results.append(1. / len(np.prod(dataset_sizes)) / proxy_scores[sample])
+                    results.append(1. / np.prod(dataset_sizes) / proxy_scores[sample])
                 else:
                     results.append(0.)
             
