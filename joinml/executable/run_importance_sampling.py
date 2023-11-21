@@ -11,6 +11,9 @@ import os
 def run(config: Config):
     set_up_logging(config.log_path)
 
+    # log config
+    logging.info(config)
+
     # dataset, oracle
     dataset = JoinDataset(config)
     oracle = Oracle(config)
@@ -69,15 +72,19 @@ def run(config: Config):
             true_error = (count_result - gt) / gt
             # get estimated confidence interval
             if count_result != 0:
-                gaussian_upper, _ = get_ci_gaussian(results, config.confidence_level)
+                _, gaussian_upper = get_ci_gaussian(results, config.confidence_level)
+                gaussian_upper *= np.prod(dataset_sizes)
                 gaussian_upper_error = (gaussian_upper - gt) / gt
-                ttest_upper, _ = get_ci_ttest(results, config.confidence_level)
+                _, ttest_upper = get_ci_ttest(results, config.confidence_level)
+                ttest_upper *= np.prod(dataset_sizes)
                 ttest_upper_error = (ttest_upper - gt) / gt
                 gaussian_upper_errors.append(gaussian_upper_error)
                 ttest_upper_errors.append(ttest_upper_error)
                 logging.info(f"sample size {sample_size} trial {i} count result {count_result} true error {true_error} gaussian upper {gaussian_upper} gaussian upper error {gaussian_upper_error} ttest upper {ttest_upper} ttest upper error {ttest_upper_error}")
             else:
                 logging.info(f"sample size {sample_size} trial {i} count result {count_result} true error {true_error}")
+            
+            
             count_results.append(count_result)
             true_errors.append(true_error)
 
