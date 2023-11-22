@@ -11,7 +11,7 @@ config = Config(
     device="cpu",
     cache_path="/mydata/yuxuan",
     proxy_score_cache=True,
-    sample_size=[5000000, 2500000, 1000000, 750000, 500000, 250000, 100000],
+    sample_size=[100000, 2000000, 3000000, 4000000, 5000000],
 )
 
 run(config)

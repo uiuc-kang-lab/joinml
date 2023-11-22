@@ -7,7 +7,7 @@ config = Config(
     is_self_join=True,
     log_path="logs/stackoverflow-uniform.log",
     repeats=50,
-    sample_size=[5000000, 1000000, 500000, 100000]
+    sample_size=[1000000, 2000000, 3000000, 4000000, 5000000]
 )
 
 run(config)
