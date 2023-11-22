@@ -67,6 +67,7 @@ def run(config: Config):
         config.blocking_size = [config.blocking_size]
 
     for blocking_size in config.blocking_size:
+        logging.info(f"running with blocking size: {blocking_size}")
         unblocked_samples = proxy_rank[-blocking_size:]
         blocked_samples = proxy_rank[:-blocking_size]
         blocked_proxy_scores = proxy_scores[blocked_samples]
@@ -111,9 +112,9 @@ def run(config: Config):
                     ttest_upper_error = (ttest_upper + unblocked_positives - gt) / gt
                     gaussian_upper_errors.append(gaussian_upper_error)
                     ttest_upper_errors.append(ttest_upper_error)
-                    logging.info(f"sample size {sample_size} trial {i} count result {count_result + unblocked_positives} true error {true_error} gaussian upper {gaussian_upper} gaussian upper error {gaussian_upper_error} ttest upper {ttest_upper} ttest upper error {ttest_upper_error}")
+                    logging.info(f"running with sample size {sample_size} trial {i} count result {count_result + unblocked_positives} true error {true_error} gaussian upper {gaussian_upper} gaussian upper error {gaussian_upper_error} ttest upper {ttest_upper} ttest upper error {ttest_upper_error}")
                 else:
-                    logging.info(f"sample size {sample_size} trial {i} count result {count_result + unblocked_positives} true error {true_error}")
+                    logging.info(f"running with sample size {sample_size} trial {i} count result {count_result + unblocked_positives} true error {true_error}")
                 
                 count_results.append(count_result+unblocked_positives)
                 true_errors.append(true_error)
