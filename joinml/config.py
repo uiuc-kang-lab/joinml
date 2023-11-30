@@ -27,8 +27,10 @@ class Config:
     # algorithm related
     blocking_size: int = 1000000
     sample_size: int = 1000000
-    defensive_rate: float = 0.01
+    defensive_rate: float = 0
 
     # special
     enable_remap: bool = True
     proxy_normalizing_style: str = "proportional"
+
+    oracle_budget: int = -1
