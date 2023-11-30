@@ -66,6 +66,12 @@ def run(config: Config):
     if isinstance(config.blocking_size, int):
         config.blocking_size = [config.blocking_size]
 
+    blocking_sizes = config.blocking_size
+    sample_sizes = config.sample_size
+
+    if config.oracle_budget != -1:
+        blocking_size = [config.oracle_budget / 10 * i for i in range(1,10)]
+
     for blocking_size in config.blocking_size:
         logging.info(f"running with blocking size: {blocking_size}")
         unblocked_samples = proxy_rank[-blocking_size:]
@@ -84,6 +90,8 @@ def run(config: Config):
         logging.info(f"blocked positives: {gt - unblocked_positives}")
 
         for sample_size in config.sample_size:
+            if config.oracle_budget != -1:
+                sample_size = config.oracle_budget - blocking_size
             count_results = []
             true_errors = []
             gaussian_upper_errors = []
@@ -126,4 +134,5 @@ def run(config: Config):
             ttest_upper_error = np.mean(ttest_upper_errors)
             logging.info(f"results: sample size {sample_size} average count result {average_count_result} average true error {average_true_error} std true error {std_true_error} gaussian upper error {gaussian_upper_error} ttest upper error {ttest_upper_error}")
 
-
+            if config.oracle_budget != -1:
+                break
