@@ -70,9 +70,9 @@ def run(config: Config):
     sample_sizes = config.sample_size
 
     if config.oracle_budget != -1:
-        blocking_size = [config.oracle_budget / 10 * i for i in range(1,10)]
+        blocking_sizes = [config.oracle_budget // 10 * i for i in range(1,10)]
 
-    for blocking_size in config.blocking_size:
+    for blocking_size in blocking_sizes:
         logging.info(f"running with blocking size: {blocking_size}")
         unblocked_samples = proxy_rank[-blocking_size:]
         blocked_samples = proxy_rank[:-blocking_size]
