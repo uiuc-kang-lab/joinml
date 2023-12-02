@@ -34,3 +34,6 @@ class Config:
     proxy_normalizing_style: str = "proportional"
 
     oracle_budget: int = -1
+
+    # allocation
+    allocation_step: int = 1000
