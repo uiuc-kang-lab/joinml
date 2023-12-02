@@ -66,24 +66,52 @@ def run(config: Config):
     if isinstance(config.blocking_size, int):
         config.blocking_size = [config.blocking_size]
 
-    blocking_sizes = config.blocking_size
-    sample_sizes = config.sample_size
-
-    if config.oracle_budget != -1:
-        blocking_sizes = [config.oracle_budget // 10 * i for i in range(1,10)]
-
     # run variance estimation
     start_rank = len(proxy_rank) - config.oracle_budget
     end_rank = len(proxy_rank)
     logging.info("Running variance estimation.")
     variance_estimation = []
+    upper_error_rates_estimation = []
+    true_error_rates_estimation = []
     for rank_div in range(start_rank, end_rank, config.allocation_step):
+        # get gt
+        subpopulation_gt = gt
+        for data_id in np.array(np.unravel_index(proxy_rank[rank_div:], dataset_sizes)).T:
+            if oracle.query(data_id):
+                subpopulation_gt -= 1
+        logging.info(f"groundtruth of the subpopulation: {subpopulation_gt}")
         subpopulation_variance = []
-        subpopulation_proxy_scores = proxy_scores[proxy_rank[rank_div:]]
+        subpopulation_upper_errors = []
+        subpopulation_upper_error_rates = []
+        subpopulation_true_errors = []
+        subpopulation_true_error_rates = []
+        subpopulation_proxy_scores = proxy_scores[proxy_rank[:rank_div]]
         subpopulation_proxy_scores = normalize(subpopulation_proxy_scores)
         for i in range(config.repeats):
             sample = np.random.choice(rank_div, size=config.sample_size, p=subpopulation_proxy_scores, replace=True)
-            subpopulation_variance.append(np.var(sample))
-            logging.info(f"subpopulation {rank_div} repeat {i} variance {np.var(sample)}")
+            sample_id = proxy_rank[sample]
+            sample_id = np.array(np.unravel_index(sample_id, dataset_sizes)).T
+            results = []
+            for s, s_id in zip(sample, sample_id):
+                if oracle.query(s_id):
+                    results.append(1. / rank_div / subpopulation_proxy_scores[s])
+                else:
+                    results.append(0.)
+
+            results = np.array(results)                
+            variance = np.var(results)
+            _, gaussian_upper = get_ci_gaussian(results, config.confidence_level)
+            upper_error = abs(gaussian_upper*rank_div - subpopulation_gt)
+            upper_error_rate = upper_error / gt
+            true_error = abs(np.mean(results) * rank_div - subpopulation_gt)
+            true_error_rate = true_error / gt
+            logging.info(f"subpopulation {rank_div} repeat {i} variance {np.var(sample)} upper error {upper_error} upper_error_rate {upper_error_rate} true_error {true_error} true_error_rate {true_error_rate}")
+            subpopulation_variance.append(variance)
+            subpopulation_upper_errors.append(upper_error)
+            subpopulation_upper_error_rates.append(upper_error_rate)
+            subpopulation_true_errors.append(true_error)
+            subpopulation_true_error_rates.append(true_error_rate)
         variance_estimation.append(np.mean(subpopulation_variance))
-        logging.info(f"average: subpopulation {rank_div} variance {np.mean(subpopulation_variance)}")
+        upper_error_rates_estimation.append(np.mean(subpopulation_upper_error_rates))
+        true_error_rates_estimation.append(np.mean(subpopulation_true_errors))
+        logging.info(f"average: subpopulation {rank_div} variance {np.mean(subpopulation_variance)} upper_error_rate {np.mean(subpopulation_upper_error_rates)} true_error_rate {np.mean(subpopulation_true_error_rates)}")
