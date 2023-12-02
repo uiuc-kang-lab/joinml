@@ -105,7 +105,7 @@ def run(config: Config):
             upper_error_rate = upper_error / gt
             true_error = abs(np.mean(results) * rank_div - subpopulation_gt)
             true_error_rate = true_error / gt
-            logging.info(f"subpopulation {rank_div} repeat {i} variance {np.var(sample)} upper error {upper_error} upper_error_rate {upper_error_rate} true_error {true_error} true_error_rate {true_error_rate}")
+            logging.info(f"subpopulation {rank_div} repeat {i} variance {variance} upper error {upper_error} upper_error_rate {upper_error_rate} true_error {true_error} true_error_rate {true_error_rate}")
             subpopulation_variance.append(variance)
             subpopulation_upper_errors.append(upper_error)
             subpopulation_upper_error_rates.append(upper_error_rate)
