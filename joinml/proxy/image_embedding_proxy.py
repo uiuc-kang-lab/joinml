@@ -15,6 +15,8 @@ import torch.nn.functional as F
 from torchvision import transforms
 from collections import OrderedDict
 from PIL import Image
+from tqdm import tqdm
+
 
 class Normalize(nn.Module):
     def __init__(self, p=2):
@@ -281,7 +283,7 @@ def _run_reid(model: nn.modules, image_path: List[str],
     model.eval()
     with torch.no_grad():
         features = []
-        for i in range(0, len(images), batch_size):
+        for i in tqdm(range(0, len(images), batch_size)):
             batch_images = images[i:i+batch_size]
             batch_features = model(batch_images)
             features.append(batch_features)

@@ -8,7 +8,7 @@ dataset2modality = {
 
 kind2proxy = {
     "opencv": ["Compare Histogram", "pHash"],
-    "image_embedding": ["infomin"],
+    "image_embedding": ["infomin", "reid"],
     "text_embedding": [
         "all-MiniLM-L6-v2",
         "all-mpnet-base-v2",
