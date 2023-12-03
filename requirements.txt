@@ -11,3 +11,5 @@ opencv-contrib-python
 transformers
 gdown
 numba
+torchreid
+tensorboard

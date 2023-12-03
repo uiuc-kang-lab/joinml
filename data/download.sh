@@ -28,6 +28,7 @@ Help()
    echo "company                      company dataset (about 129.5MB)"
    echo "city_vehicle                 AICity Vehicle multi-camera multi-target tracking dataset (about 469MB)"
    echo "city_vehicle_2               AICity Vehicle multi-camera multi-target tracking dataset two table version (about 336MB)"
+   echo "city_human                   AICity Human multi-camera multi-target tracking dataset (about 583.4MB)"
    echo "======= Available models ========="
    echo "twitter_minilm                 finetuned bi-encoder for twitter dataset with minilm l6 v2 (about 79.7MB)"
    echo "quora_minilm                   finetuned bi-encoder for quora dataset with minilm l6 v2 (about 79.7MB)"
@@ -149,6 +150,25 @@ city_vehicle_2()
 fi
 }
 
+city_human()
+{
+    if [ ! -d "${DIR}/city_human/" ];
+    then
+        echo "Downloading AICity vehicle multi-camera multi-target tracking dataset(about 584.3MB)..."
+        gdown 1P5-CrcXxxzqVhiO-9Rw80Q-ypMFjXOnj
+
+        echo "Dataset downloaded, now decompressing..."
+        tar -xf ${DIR}/city_human.tar -C ${DIR}
+
+        echo "Removing compressed file..."
+        rm -f ${DIR}/city_human.tar
+
+        echo -e "${GREEN}AICity human multi-camera multi-target tracking dataset downloaded!${NC}"
+    else
+        echo -e "${RED}AICity human multi-camera multi-target tracking dataset already exists under ${DIR}/city_human/!"
+fi
+}
+
 quora_minilm()
 {
     if [ ! -d "${DIR}/quora-MiniLM-L6-v2/" ];
@@ -229,6 +249,9 @@ Download() {
                 ;;
             city_vehicle_2 )
                 city_vehicle_2
+                ;;
+            city_human )
+                city_human
                 ;;
             quora_minilm )
                 quora_minilm

@@ -8,5 +8,6 @@ data/quora*
 data/twitter*
 data/quora_3500
 data/stackoverflow*
+data/city_human*
 archive
 **/model_cache

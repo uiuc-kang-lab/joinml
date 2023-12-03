@@ -16,6 +16,7 @@ from torchvision import transforms
 from collections import OrderedDict
 from PIL import Image
 from tqdm import tqdm
+import torchreid
 
 
 class Normalize(nn.Module):
@@ -234,6 +235,19 @@ def _build_reid_model(model_cache_path: str):
     model.load_state_dict(ckpt)
     return model
 
+def _build_human_reid_model(model_cache_path: str):
+    if not os.path.exists(f"{model_cache_path}/human_reid.pth"):
+        if not os.path.exists(model_cache_path):
+            os.makedirs(model_cache_path)
+        gdown.download(id="1a20Z5lPFXCskjMScLW8S-2OuhBr93ZHB",
+                       output=f"{model_cache_path}/human_reid.pth", quiet=False)
+    model = torchreid.utils.FeatureExtractor(
+        model_name='osnet_x1_0',
+        model_path=f"{model_cache_path}/human_reid.pth",
+        device='cpu'
+    )   
+    return model
+
 def _run_infomin(model: nn.modules, images_path: List[str], 
                  device: str="cpu", batch_size: int=8) -> np.ndarray:
     mean = [0.485, 0.456, 0.406]
@@ -291,6 +305,32 @@ def _run_reid(model: nn.modules, image_path: List[str],
         features = features.cpu().numpy()
     return features
 
+def _run_human_reid(model: nn.modules, image_path: List[str],
+                    device: str="cpu", batch_size: int=8) -> np.ndarray:
+    transform = transforms.Compose([
+        transforms.Resize([256, 128]),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+    images = []
+    for image_path in image_path:
+        image = Image.open(image_path)
+        image.convert('RGB')
+        image = transform(image)
+        images.append(image)
+    images = torch.stack(images)
+    images = images
+    model = model
+    with torch.no_grad():
+        features = []
+        for i in range(0, len(images), batch_size):
+            batch_images = images[i:i+batch_size]
+            batch_features = model(batch_images)
+            features.append(batch_features)
+        features = torch.cat(features, dim=0)
+        features = features.cpu().numpy()
+    return features
+
 class ImageEmbeddingProxy(Proxy):
     def __init__(self, config: Config):
         model_name = config.proxy
@@ -300,6 +340,9 @@ class ImageEmbeddingProxy(Proxy):
         elif model_name == "reid":
             self.model = _build_reid_model(config.model_cache_path)
             self.run = _run_reid
+        elif model_name == "human_reid":
+            self.model = _build_human_reid_model(config.model_cache_path)
+            self.run = _run_human_reid
         else:
             raise NotImplementedError(f"Model {model_name} not implemented.")
         self.device = config.device
@@ -325,12 +368,12 @@ class ImageEmbeddingProxy(Proxy):
 if __name__ == "__main__":
     from itertools import product
     import time
-    images = [f"../../data/city_vehicle/imgs/table0/{i}.jpg" for i in range(20)]
+    images = [f"../../data/city_human/imgs/table0/{i}.jpg" for i in range(20)]
     table1 = images[:10]
     table2 = images[10:]
     tuples = list(product(images, images))
     config = Config()
-    config.proxy = "reid"
+    config.proxy = "human_reid"
     proxy = ImageEmbeddingProxy(config)
     print(proxy.get_proxy_score_for_tables(table1, table2))
     print(proxy.get_proxy_score_for_tuples(tuples))
