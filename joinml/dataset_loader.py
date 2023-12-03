@@ -18,7 +18,7 @@ class JoinDataset:
     
     def get_join_column(self):
         join_column_per_table = []
-        if self.dataset == "city_vehicle_2":
+        if self.dataset in ["city_vehicle_2", "city_human"]:
             table_sizes = self.get_sizes()
             for i, table_size in enumerate(table_sizes):
                 join_column = []
