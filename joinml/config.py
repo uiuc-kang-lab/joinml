@@ -37,3 +37,5 @@ class Config:
 
     # allocation
     allocation_step: int = 1000
+    num_strata: int = 101
+    bootstrap_trials: int = 10000

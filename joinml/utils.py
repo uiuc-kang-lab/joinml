@@ -100,6 +100,16 @@ def get_ci_ttest(data, confidence_level=0.95):
     confidence_interval = t.confidence_interval(confidence_level=confidence_level)
     return confidence_interval.low, confidence_interval.high
 
+def get_ci_bootstrap(data, confidence_level=0.95, trials=10000):
+    """Get the confidence interval of the data using bootstrap."""
+    n = len(data)
+    bootstrap_samples = np.random.choice(data, size=(trials, n), replace=True)
+    bootstrap_means = np.average(bootstrap_samples, axis=1)
+    bootstrap_means = np.sort(bootstrap_means)
+    lower = int(trials * (1 - confidence_level) / 2)
+    upper = int(trials * (1 + confidence_level) / 2)
+    return bootstrap_means[lower], bootstrap_means[upper]
+
 def normalize(array: np.ndarray, style="proportional"):
     if style == "proportional":
         array /= np.sum(array)
