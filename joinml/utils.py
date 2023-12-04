@@ -110,6 +110,14 @@ def get_ci_bootstrap(data, confidence_level=0.95, trials=10000):
     upper = int(trials * (1 + confidence_level) / 2)
     return bootstrap_means[lower], bootstrap_means[upper]
 
+def get_ci_wilson_score_interval(data, confidence_level=0.95):
+    """Get the confidence interval of the data using Wilson score interval."""
+    mean = np.average(data)
+    z = stats.norm.ppf(1 - (1 - confidence_level) / 2)
+    center = 1 / (1+z**2/len(data)) * (mean + z**2/(2*len(data)))
+    width = z / (1+z**2/len(data)) * np.sqrt(mean*(1-mean)/len(data) + z**2/(4*len(data)**2))
+    return center - width, center + width
+
 def normalize(array: np.ndarray, style="proportional"):
     if style == "proportional":
         array /= np.sum(array)

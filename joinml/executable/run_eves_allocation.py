@@ -67,27 +67,36 @@ def run(config: Config):
         config.blocking_size = [config.blocking_size]
 
     strata = []
-    n = int(len(dataset_sizes[0])*len(dataset_sizes[1]) - config.oracle_budget)
+    n = int(dataset_sizes[0]*dataset_sizes[1] - config.oracle_budget)
     m = int(config.oracle_budget / (config.num_strata - 1))
     strata.append((0, n))
+    strata_gts = []
     allocation_step = m
     for i in range(1, config.num_strata):
         strata.append((strata[i-1][1], strata[i-1][1] + allocation_step))
+        strata_gt = 0
+        for j in range(strata[i][0], strata[i][1]):
+            table_id = np.array(np.unravel_index(proxy_rank[j], dataset_sizes)).T
+            if oracle.query(table_id):
+                strata_gt += 1
+        strata_gts.append(strata_gt)
     logging.info(f"Strata: {strata}")
+    logging.info(f"Strata gts: {strata_gts}")
     strata_allocation = []
     stage_one_sample_size = int(0.9 * config.oracle_budget)
     for stratum in strata:
-        prosy_score_sum = np.sum(proxy_scores[proxy_rank[stratum[0]:stratum[1]]]) / (stratum[1] - stratum[0])
+        prosy_score_sum = np.sum(proxy_scores[proxy_rank[stratum[0]:stratum[1]]])
         strata_allocation.append(int(stage_one_sample_size * prosy_score_sum / np.sum(proxy_scores)))
     # sample for each stratum
     strata_samples = []
     strata_agg_results = []
     strata_variance = []
     strata_mean = []
-    for stratum, allocation in zip(strata, strata_allocation):
+    for i, (stratum, allocation) in enumerate(zip(strata, strata_allocation)):
         sample_weights = proxy_scores[proxy_rank[stratum[0]:stratum[1]]]
         sample_weights = normalize(sample_weights)
-        sample = np.random.choice(stratum[1] - stratum[0], allocation, replace=False, p=sample_weights)
+        sample = np.random.choice(stratum[1] - stratum[0], allocation, replace=True, p=sample_weights)
+        logging.info(f"Strata {i} sample size: {len(sample)}")
         sample_ids = proxy_rank[stratum[0]:stratum[1]][sample]
         strata_samples.append(sample_ids)
         sample_ids = np.array(np.unravel_index(sample_ids, dataset_sizes)).T
@@ -97,13 +106,15 @@ def run(config: Config):
                 results.append(1. / len(sample_weights) / sample_weights[s])
             else:
                 results.append(0)
+        logging.info(f"Strata {i} results: {results}")
         strata_agg_results.append(np.array(results))
         strata_variance.append(np.var(results))
         strata_mean.append(np.mean(results))
+        logging.info(f"Strata {i} variance {strata_variance[i]} mean {strata_mean[i]}")
     
     # find the optimal sets of stratum samples
-    allocation_variances = []
-    allocation_means = []
+    allocation_variances = [strata_variance[0]]
+    allocation_means = [strata_mean[0]]
     allocation_utility = []
     for i in range(1, len(strata)):
         # The Eve's law
@@ -121,7 +132,8 @@ def run(config: Config):
         allocation_sample.append(strata_samples[i])
     allocation_sample = np.concatenate(allocation_sample)
     logging.info(f"Optimal allocation: {optimal_allocation}")
-    
+    logging.info(f"Blocking ratio {1 - optimal_allocation / config.num_strata}")
+    exit()
     # run bootstrap to get an CI
     allocation_sample_ids = np.array(np.unravel_index(allocation_sample, dataset_sizes)).T
     allocation_results = []
