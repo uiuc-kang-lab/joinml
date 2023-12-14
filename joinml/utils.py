@@ -62,7 +62,7 @@ def calculate_score_for_tuples(embeddings: np.ndarray) -> np.ndarray:
     return scores
 
 @jit(nopython=True)
-def calculate_scre_for_tables(embeddings1: np.ndarray, embeddings2: np.ndarray) -> np.ndarray:
+def calculate_score_for_tables(embeddings1: np.ndarray, embeddings2: np.ndarray) -> np.ndarray:
     scores = np.ones((len(embeddings1), len(embeddings2)))
     for i in range(len(embeddings1)):
         for j in range(len(embeddings2)):
