@@ -29,6 +29,7 @@ Help()
    echo "city_vehicle                 AICity Vehicle multi-camera multi-target tracking dataset (about 469MB)"
    echo "city_vehicle_2               AICity Vehicle multi-camera multi-target tracking dataset two table version (about 336MB)"
    echo "city_human                   AICity Human multi-camera multi-target tracking dataset (about 583.4MB)"
+   echo "wikidiverse                  wikidiverse dataset (about 20.7GB)"
    echo "======= Available models ========="
    echo "twitter_minilm                 finetuned bi-encoder for twitter dataset with minilm l6 v2 (about 79.7MB)"
    echo "quora_minilm                   finetuned bi-encoder for quora dataset with minilm l6 v2 (about 79.7MB)"
@@ -169,6 +170,25 @@ city_human()
 fi
 }
 
+wikidiverse()
+{
+    if [ ! -d "${DIR}/wikidiverse/" ];
+    then
+        echo "Downloading wikidiverse dataset (about 20.69GB)..."
+        gdown 1URwI5bYk1f_QaN1pqBIK890sJt0stInZ
+
+        echo "Dataset downloaded, now decompressing..."
+        tar -xf ${DIR}/wikidiverse.tar -C ${DIR}
+
+        echo "Removing compressed file..."
+        rm -f ${DIR}/wikidiverse.tar
+
+        echo -e "${GREEN}wikidiverse dataset downloaded!${NC}"
+    else
+        echo -e "${RED}wikidiverse dataset already exists under ${DIR}/wikidiverse/!"
+fi
+}
+
 quora_minilm()
 {
     if [ ! -d "${DIR}/quora-MiniLM-L6-v2/" ];
@@ -261,6 +281,9 @@ Download() {
                 ;;
             stackoverflow_proxy )
                 stackoverflow_proxy
+                ;;
+            wikidiverse )
+                wikidiverse
                 ;;
         esac
     done

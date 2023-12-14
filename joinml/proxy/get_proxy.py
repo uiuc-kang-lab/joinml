@@ -2,6 +2,7 @@ from joinml.proxy.image_embedding_proxy import ImageEmbeddingProxy
 from joinml.proxy.stringmatching_proxy import StringMatchingProxy
 from joinml.proxy.opencv_proxy import OpencvProxy
 from joinml.proxy.text_embedding_proxy import TextEmbeddingProxy
+from joinml.proxy.multimodal_embedding_proxy import MultimodalEmbeddingProxy
 from joinml.config import Config
 from joinml.commons import modality2proxy, dataset2modality, kind2proxy
 from joinml.dataset_loader import JoinDataset
@@ -19,6 +20,8 @@ def get_proxy(config: Config):
         return StringMatchingProxy(config)
     elif config.proxy in kind2proxy["opencv"]:
         return OpencvProxy(config)
+    elif config.proxy in kind2proxy["multimodal"]:
+        return MultimodalEmbeddingProxy(config)
     elif config.proxy.startswith("data/"):
         return TextEmbeddingProxy(config)
     else:

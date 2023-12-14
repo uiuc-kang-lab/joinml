@@ -9,5 +9,6 @@ data/twitter*
 data/quora_3500
 data/stackoverflow*
 data/city_human*
+data/wikidiverse*
 archive
 **/model_cache

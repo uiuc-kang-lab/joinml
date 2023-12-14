@@ -2,8 +2,10 @@ dataset2modality = {
     "twitter": "text",
     "quora": "text",
     "company": "text",
-    "city_vehicle": "image",
-    "city_vehicle_2": "image"
+    "city_human": "image",
+    "stackoverflow": "text",
+    "city_vehicle_2": "image",
+    "wikidiverse": "multimodal"
 }
 
 kind2proxy = {
@@ -45,7 +47,18 @@ kind2proxy = {
         'Partial Ratio',
         'Partial Token Sort',
         'Editex'
-    ] 
+    ],
+    "multimodal": [
+        'RN50',
+        'RN101',
+        'RN50x4',
+        'RN50x16',
+        'RN50x64',
+        'ViT-B/32',
+        'ViT-B/16',
+        'ViT-L/14',
+        'ViT-L/14@336px'
+    ]
 }
 
 modality2proxy = {
