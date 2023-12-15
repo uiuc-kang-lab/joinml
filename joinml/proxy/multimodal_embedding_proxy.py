@@ -3,45 +3,97 @@ from joinml.config import Config
 import clip
 import pandas as pd
 from typing import List
-from PIL import Image
+from PIL import Image, ImageFile
 import numpy as np
 from joinml.utils import calculate_score_for_tables
 import torch
 from tqdm import tqdm
+import os
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class MultiModalEmbeddingProxy(Proxy):
     def __init__(self, config: Config) -> None:
         self.model, self.process = clip.load(config.proxy, device=config.device)
         self.device = config.device
+        self.config = config
 
     def _embed_text(self, text: List[str]):
-        text_encodings = clip.tokenize(text, truncate=True).to(self.device)
-        text_embeddings = self.model.encode_text(text_encodings).detach().cpu().numpy()
-        return text_embeddings
+        text_embeddings = []
+        for i in tqdm(range(0, len(text), self.config.batch_size)):
+            if i + self.config.batch_size > len(text):
+                text_encodings = clip.tokenize(text[i:], truncate=True).to(self.device)
+            else:
+                text_encodings = clip.tokenize(text[i:i+self.config.batch_size], truncate=True).to(self.device)
+            text_embeddings.append(self.model.encode_text(text_encodings).detach().cpu().numpy())
+        return np.concatenate(text_embeddings, axis=0)
     
     def _embed_image(self, image_path: List[str]):
-        images = [Image.open(path) for path in image_path]
-        images = torch.stack([self.process(image).to(self.device) for image in images])
-        images_embeddings = self.model.encode_image(images).detach().cpu().numpy()
-        return images_embeddings
+        images_embeddings = []
+        for i in tqdm(range(0, len(image_path), self.config.batch_size)):
+            if i + self.config.batch_size > len(image_path):
+                images = []
+                for path in image_path[i:]:
+                    try:
+                        images.append(Image.open(path))
+                    except:
+                        images.append(Image.new("RGB", (224, 224), (255, 255, 255)))
+            else:
+                images = []
+                for path in image_path[i:i+self.config.batch_size]:
+                    try:
+                        images.append(Image.open(path))
+                    except:
+                        images.append(Image.new("RGB", (224, 224), (255, 255, 255)))
+            images = torch.stack([self.process(image).to(self.device) for image in images])
+            images_embeddings.append(self.model.encode_image(images).detach().cpu().numpy())
+        return np.concatenate(images_embeddings, axis=0)
     
     def get_proxy_score_for_tables(self, table1: pd.DataFrame, table2: pd.DataFrame, is_self_join: bool=False) -> np.ndarray:
-        text1 = table1["join_col"].to_list()
-        text1_embeddings = self._embed_text(text1)
-        if is_self_join:
-            text2_embeddings = text1_embeddings
+        # check if the embeddings exists
+        text1_cache_path = f"{self.config.cache_path}/{self.config.dataset_name}_embeddings/text1.npy"
+        text2_cache_path = f"{self.config.cache_path}/{self.config.dataset_name}_embeddings/text2.npy"
+        images1_cache_path = f"{self.config.cache_path}/{self.config.dataset_name}_embeddings/images1.npy"
+        images2_cache_path = f"{self.config.cache_path}/{self.config.dataset_name}_embeddings/images2.npy"
+        if os.path.exists(text1_cache_path):
+            text1_embeddings = np.load(text1_cache_path)
         else:
-            text2 = table2["join_col"].to_list()
-            text2_embeddings = self._embed_text(text2)
+            text1 = table1["join_col"].to_list()
+            text1_embeddings = self._embed_text(text1)
+            np.save(text1_cache_path, text1_embeddings)
         
-        images1 = table1["img_path"].to_list()
-        images1_embeddings = self._embed_image(images1)
-        if is_self_join:
-            images2_embeddings = images1_embeddings
+        if os.path.exists(text2_cache_path):
+            text2_embeddings = np.load(text2_cache_path)
         else:
-            images2 = table2["img_path"].to_list()
-            images2_embeddings = self._embed_image(images2)
+            if is_self_join:
+                text2_embeddings = text1_embeddings
+            else:
+                text2 = table2["join_col"].to_list()
+                text2_embeddings = self._embed_text(text2)
+            np.save(text2_cache_path, text2_embeddings)
         
+        if os.path.exists(images1_cache_path):
+            images1_embeddings = np.load(images1_cache_path)
+        else:
+            images1 = table1["img_path"].to_list()
+            images1_embeddings = self._embed_image(images1)
+            np.save(images1_cache_path, images1_embeddings)
+            
+        if os.path.exists(images2_cache_path):
+            images2_embeddings = np.load(images2_cache_path)
+        else:
+            if is_self_join:
+                images2_embeddings = images1_embeddings
+            else:
+                images2 = table2["img_path"].to_list()
+                images2_embeddings = self._embed_image(images2)
+            np.save(images2_cache_path, images2_embeddings)
+        
+        text1_embeddings = np.array(text1_embeddings, dtype=np.float32)
+        text2_embeddings = np.array(text2_embeddings, dtype=np.float32)
+        images1_embeddings = np.array(images1_embeddings, dtype=np.float32)
+        images2_embeddings = np.array(images2_embeddings, dtype=np.float32)
+
         # calculate the similarity between text1 and text2
         text_scores = calculate_score_for_tables(text1_embeddings, text2_embeddings)
         # calculate the similarity between images1 and images2

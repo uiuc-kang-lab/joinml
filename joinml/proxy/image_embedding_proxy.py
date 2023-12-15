@@ -1,7 +1,7 @@
 from joinml.proxy.proxy import Proxy
 from joinml.config import Config
 from joinml.proxy.resnet import resnet50
-from joinml.utils import calculate_score_for_tuples, calculate_scre_for_tables
+from joinml.utils import calculate_score_for_tuples, calculate_score_for_tables
 from joinml.proxy.reid_models import vit_base_patch16_224_TransReID
 
 import os
@@ -353,7 +353,7 @@ class ImageEmbeddingProxy(Proxy):
         if is_self_join:
             features2 = features1
         features2 = self.run(self.model, table2, device=self.device, batch_size=self.batch_size)
-        return calculate_scre_for_tables(features1, features2)
+        return calculate_score_for_tables(features1, features2)
 
     def get_proxy_score_for_tuples(self, tuples: List[List[str]]) -> np.ndarray:
         # flatten tuples

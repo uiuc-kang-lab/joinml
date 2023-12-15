@@ -3,7 +3,7 @@ import numpy as np
 from joinml.config import Config
 from joinml.utils import get_sentence_transformer
 from joinml.proxy.proxy import Proxy
-from joinml.utils import calculate_score_for_tuples, calculate_scre_for_tables
+from joinml.utils import calculate_score_for_tuples, calculate_score_for_tables
 
 from tqdm import tqdm
 import numpy as np
@@ -33,10 +33,10 @@ class TextEmbeddingProxy(Proxy):
     def get_proxy_score_for_tables(self, table1: List[str], table2: List[str], is_self_join: bool=False) -> np.ndarray:
         embeddings1 = self.model.encode(table1, device=self.device)
         if is_self_join:
-            scores = calculate_scre_for_tables(embeddings1, embeddings1)
+            scores = calculate_score_for_tables(embeddings1, embeddings1)
         else:
             embeddings2 = self.model.encode(table2, device=self.device)
-            scores = calculate_scre_for_tables(embeddings1, embeddings2)
+            scores = calculate_score_for_tables(embeddings1, embeddings2)
         return scores
 
 if __name__ == "__main__":
