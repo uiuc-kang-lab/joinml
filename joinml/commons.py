@@ -2,10 +2,10 @@ dataset2modality = {
     "twitter": "text",
     "quora": "text",
     "company": "text",
-    "city_human": "image",
     "stackoverflow": "text",
-    "city_vehicle_2": "image",
-    "wikidiverse": "multimodal"
+    "city_human": "image",
+    "city_vehicle": "image",
+    "flickr30k": "multimodal"
 }
 
 kind2proxy = {
@@ -49,15 +49,8 @@ kind2proxy = {
         'Editex'
     ],
     "multimodal": [
-        'RN50',
-        'RN101',
-        'RN50x4',
-        'RN50x16',
-        'RN50x64',
-        'ViT-B/32',
-        'ViT-B/16',
-        'ViT-L/14',
-        'ViT-L/14@336px'
+        "clip",
+        "blip"
     ]
 }
 

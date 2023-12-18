@@ -14,18 +14,11 @@ class Oracle:
         logging.info("Loading oracle labels from %s", oracle_label_file)
         raw_oracle_label_list = read_csv(oracle_label_file)
         self.oracle_labels = set([tuple(row) for row in raw_oracle_label_list])
-        self.cache = set()
     
     def query(self, data: Tuple[int]):
         """Query the oracle for a data point."""
         data_str = tuple([str(int(d)) for d in data])
-        if data_str not in self.cache:
-            self.cache.add(data_str)
         return data_str in self.oracle_labels
-    
-    def get_cost(self):
-        """Get the cost of the oracle."""
-        return len(self.cache)
     
     def get_positive_rate(self, rows):
         """Get the positive rate of the oracle."""

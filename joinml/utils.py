@@ -21,10 +21,6 @@ def divide_sample_rate(rate: float, table_sizes: List[int]):
     table_rate = math.pow(rate, 1 / len(table_sizes))
     return [int(table_rate * size) for size in table_sizes]
 
-def divide_sample_size(sample_size: int, table_sizes: List[int]):
-    table_rate = math.pow(sample_size/np.prod(table_sizes), 1 / len(table_sizes))
-    return [int(table_rate * size) for size in table_sizes]
-
 def get_sentence_transformer(model_name: str="all-MiniLM-L6-v2") -> SentenceTransformer:
     return SentenceTransformer(model_name)
 
@@ -55,7 +51,9 @@ def set_random_seed(seed):
 def calculate_score_for_tuples(embeddings: np.ndarray) -> np.ndarray:
     scores = np.zeros(len(embeddings))
     for i in range(len(embeddings)):
-        scores[i] = np.dot(embeddings[i][0], embeddings[i][1]) / (np.linalg.norm(embeddings[i][0]) * np.linalg.norm(embeddings[i][1]))
+        norm1 = np.linalg.norm(embeddings[i][0]).item()
+        norm2 = np.linalg.norm(embeddings[i][1]).item()
+        scores[i] = np.dot(embeddings[i][0], embeddings[i][1]) / (norm1 * norm2)
     # normalize scores from -1, 1 to 0, 1
     scores += 1
     scores /= 2
@@ -66,7 +64,9 @@ def calculate_score_for_tables(embeddings1: np.ndarray, embeddings2: np.ndarray)
     scores = np.ones((len(embeddings1), len(embeddings2)))
     for i in range(len(embeddings1)):
         for j in range(len(embeddings2)):
-            scores[i][j] = np.dot(embeddings1[i], embeddings2[j]) / (np.linalg.norm(embeddings1[i]) * np.linalg.norm(embeddings2[j]))
+            norm1 = np.linalg.norm(embeddings1[i][0]).item()
+            norm2 = np.linalg.norm(embeddings2[j][1]).item()
+            scores[i][j] = np.dot(embeddings1[i], embeddings2[j]) / (norm1 * norm2)
     # normalize scores from -1, 1 to 0, 1
     scores += 1
     scores /= 2
@@ -100,15 +100,13 @@ def get_ci_ttest(data, confidence_level=0.95):
     confidence_interval = t.confidence_interval(confidence_level=confidence_level)
     return confidence_interval.low, confidence_interval.high
 
-def get_ci_bootstrap(data, confidence_level=0.95, trials=10000):
+def get_ci_bootstrap(trial_results, confidence_level=0.95):
     """Get the confidence interval of the data using bootstrap."""
-    n = len(data)
-    bootstrap_samples = np.random.choice(data, size=(trials, n), replace=True)
-    bootstrap_means = np.average(bootstrap_samples, axis=1)
-    bootstrap_means = np.sort(bootstrap_means)
-    lower = int(trials * (1 - confidence_level) / 2)
-    upper = int(trials * (1 + confidence_level) / 2)
-    return bootstrap_means[lower], bootstrap_means[upper]
+    n = len(trial_results)
+    upperbound_idx = n - int((1 - confidence_level) / 2 * n)
+    lowerbound_idx = int((1 - confidence_level) / 2 * n)
+    trial_results.sort()
+    return trial_results[lowerbound_idx], trial_results[upperbound_idx]
 
 def get_ci_wilson_score_interval(data, confidence_level=0.95):
     """Get the confidence interval of the data using Wilson score interval."""

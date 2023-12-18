@@ -1,8 +1,8 @@
-from joinml.proxy.get_proxy import get_proxy
+from joinml.proxy.get_proxy import get_proxy_rank
 from joinml.dataset_loader import load_dataset
 from joinml.oracle import Oracle
 from joinml.config import Config
-from joinml.utils import set_up_logging, preprocess
+from joinml.utils import set_up_logging
 
 import os
 import logging
@@ -24,51 +24,25 @@ def run(config: Config):
     if config.is_self_join:
         dataset_sizes = (dataset_sizes[0], dataset_sizes[0])
     gt = len(oracle.oracle_labels)
+    logging.info(f"data size: {dataset_sizes}")
 
     logging.info(f"ground truth: {gt}")
 
-    # check cache for proxy scores
-    proxy_store_path = f"{config.cache_path}/{config.dataset_name}_{config.proxy.split('/')[-1]}_scores.npy"
-    if config.proxy_score_cache and os.path.exists(proxy_store_path):
-        logging.info("Loading proxy scores from %s", proxy_store_path)
-        proxy_scores = np.load(proxy_store_path)
-        assert np.prod(proxy_scores.shape) == np.prod(dataset_sizes), "Proxy scores shape does not match dataset sizes."
-    else:
-        logging.info("Calculating proxy scores.")
-        proxy = get_proxy(config)
-        join_columns = dataset.get_join_column()
-        if config.is_self_join:
-            join_columns = [join_columns[0], join_columns[0]]
-        proxy_scores = proxy.get_proxy_score_for_tables(join_columns[0], join_columns[1])
-        logging.info("Postprocessing proxy scores.")
-        proxy_scores = preprocess(proxy_scores, is_self_join=config.is_self_join)
-        proxy_scores = proxy_scores.flatten()
-
-        if config.proxy_score_cache:
-            logging.info("Saving proxy scores to %s", proxy_store_path)
-            np.save(proxy_store_path, proxy_scores)
-
     # check cache for proxy rank
-    proxy_rank_store_path = f"{config.cache_path}/{config.dataset_name}_{config.proxy.split('/')[-1]}_rank.npy"
-    if config.blocking_cache and os.path.exists(proxy_rank_store_path):
-        logging.info("Loading proxy rank from %s", proxy_rank_store_path)
-        proxy_rank = np.load(proxy_rank_store_path)
-        assert np.prod(proxy_rank.shape) == np.prod(dataset_sizes), "Proxy rank shape does not match dataset sizes."
-    else:
-        logging.info("Calculating proxy rank.")
-        proxy_rank = np.argsort(proxy_scores)
-        if config.blocking_cache:
-            logging.info("Saving proxy rank to %s", proxy_rank_store_path)
-            np.save(proxy_rank_store_path, proxy_rank)
+    proxy_rank = get_proxy_rank(config, dataset)
 
     count_all = 0
     count_positive = 0
     recall_results = []
+    proxy_rank = np.flip(proxy_rank)
     for sample_id in proxy_rank:
         count_all += 1
-        if oracle.query(sample_id):
+        sample_table_id = np.array(np.unravel_index(sample_id, dataset_sizes)).T
+        sample_table_id = sample_table_id.reshape(-1).tolist()
+        if oracle.query(sample_table_id):
             count_positive += 1
-            recall_results.append(count_positive / gt)
+        recall_results.append(count_positive / gt)
+        logging.info(f"{count_all} {count_positive} {count_positive / gt}")
     
     recall_results = np.array(recall_results)
     logging.info("Recall results: %s", recall_results)

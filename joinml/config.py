@@ -17,6 +17,9 @@ class Config:
     proxy_score_cache: bool = True
     proxy_normalizing_style: str = "proportional"
     oracle_budget: int = 1000000
+    max_blocking_ratio: float = 0.2
     num_strata: int = 11
     bootstrap_trials: int = 10000
-    task: int = "bis" # [bis, is, uniform, recall]
+    task: str = "bis" # [bis, is, uniform, recall]
+    output_file: str = f"{dataset_name}.jsonl"
+    log_level: str = "into" # [info, debug]
