@@ -10,5 +10,6 @@ data/quora_3500
 data/stackoverflow*
 data/city_human*
 data/wikidiverse*
+data/flickr30k*
 archive
 **/model_cache

@@ -22,26 +22,20 @@ Help()
 
    echo
    echo "======= Available datasets ======="
-   echo "twitter                      twitter dataset (about 10.3MB)"
+   echo "twitter                      twitter dataset (about 8.3MB)"
+   echo "stackoverflow                stackoverflow dataset (about 51.7MB)"
    echo "quora                        quora dataset (about 4.9MB)"
-   echo "stackoverflow                stackoverflow dataset (about 51.6MB)"
-   echo "company                      company dataset (about 129.5MB)"
-   echo "city_vehicle                 AICity Vehicle multi-camera multi-target tracking dataset (about 469MB)"
-   echo "city_vehicle_2               AICity Vehicle multi-camera multi-target tracking dataset two table version (about 336MB)"
-   echo "city_human                   AICity Human multi-camera multi-target tracking dataset (about 583.4MB)"
-   echo "wikidiverse                  wikidiverse dataset (about 20.7GB)"
-   echo "======= Available models ========="
-   echo "twitter_minilm                 finetuned bi-encoder for twitter dataset with minilm l6 v2 (about 79.7MB)"
-   echo "quora_minilm                   finetuned bi-encoder for quora dataset with minilm l6 v2 (about 79.7MB)"
-   echo "company_minilm                 finetuned bi-encoder for company dataset with minilm l6 v2 (about 79.7MB)"
-   echo "stackoverflow_proxy            finetuned bi-encoder for stackoverflow dataset (about 87.6MB)"
+   echo "company                      company dataset (about 129.7MB)"
+   echo "city_vehicle                 AICity Vehicle multi-camera multi-target tracking dataset (about 189.3MB)"
+   echo "city_human                   AICity Human multi-camera multi-target tracking dataset (about 1.42GB)"
+   echo "flickr30k                    multi-modal flickr 30K dataset (4.15GB)"
 }
 
 twitter()
 {
     if [ ! -d "${DIR}/twitter/" ];
     then
-        echo "Downloading twitter dataset(about 10.3MB)..."
+        echo "Downloading twitter dataset (about 8.3MB)..."
         gdown 1VY3wFFRaRqR1HqwmTkPHwWb-DZpocFce
 
         echo "Dataset downloaded, now decompressing..."
@@ -60,7 +54,7 @@ quora()
 {
     if [ ! -d "${DIR}/quora/" ];
     then
-        echo "Downloading quora dataset(about 4.9MB)..."
+        echo "Downloading quora dataset (about 4.9MB)..."
         gdown 1ztcRe6iIbGrwCuWC4p_Pfwu1R832ntAy
 
         echo "Dataset downloaded, now decompressing..."
@@ -79,7 +73,7 @@ stackoverflow()
 {
     if [ ! -d "${DIR}/stackoverflow/" ];
     then
-        echo "Downloading stackoverflow dataset(about 51.6MB)..."
+        echo "Downloading stackoverflow dataset (about 51.7MB)..."
         gdown 1m6DUQdXrAjT-ku2ppB5gV4TEGf6t_K5N
 
         echo "Dataset downloaded, now decompressing..."
@@ -98,7 +92,7 @@ company()
 {
     if [ ! -d "${DIR}/company/" ];
     then
-        echo "Downloading company dataset(about 137MB)..."
+        echo "Downloading company dataset (about 129.7MB)..."
         gdown 13WMkYPr4olnlm8Vok4hs-1OuuiCwW1lD
 
         echo "Dataset downloaded, now decompressing..."
@@ -117,7 +111,7 @@ city_vehicle()
 {
     if [ ! -d "${DIR}/city_vehicle/" ];
     then
-        echo "Downloading AICity vehicle multi-camera multi-target tracking dataset(about 469MB)..."
+        echo "Downloading AICity vehicle multi-camera multi-target tracking dataset (about 189.3MB)..."
         gdown 1pC2tltQrZT7f7gWI47wWL4sSjwMwx-Z9
 
         echo "Dataset downloaded, now decompressing..."
@@ -132,30 +126,11 @@ city_vehicle()
 fi
 }
 
-city_vehicle_2()
-{
-    if [ ! -d "${DIR}/city_vehicle_2/" ];
-    then
-        echo "Downloading AICity vehicle multi-camera multi-target tracking dataset 2 tables (about 336MB)..."
-        gdown 1XXaffI1GqThu3ucvpMRJfpZrg22gTwxB
-
-        echo "Dataset downloaded, now decompressing..."
-        tar -xf ${DIR}/city_vehicle_2.tar -C ${DIR}
-
-        echo "Removing compressed file..."
-        rm -f ${DIR}/city_vehicle_2.tar
-
-        echo -e "${GREEN}AICity vehicle multi-camera multi-target tracking dataset downloaded!${NC}"
-    else
-        echo -e "${RED}AICity vehicle multi-camera multi-target tracking dataset already exists under ${DIR}/city_vehicle_2/!"
-fi
-}
-
 city_human()
 {
     if [ ! -d "${DIR}/city_human/" ];
     then
-        echo "Downloading AICity vehicle multi-camera multi-target tracking dataset(about 584.3MB)..."
+        echo "Downloading AICity vehicle multi-camera multi-target tracking dataset (about 1.42GB)..."
         gdown 1P5-CrcXxxzqVhiO-9Rw80Q-ypMFjXOnj
 
         echo "Dataset downloaded, now decompressing..."
@@ -170,82 +145,24 @@ city_human()
 fi
 }
 
-wikidiverse()
+flickr30k()
 {
-    if [ ! -d "${DIR}/wikidiverse/" ];
+    if [ ! -d "${DIR}/flickr30k/" ];
     then
-        echo "Downloading wikidiverse dataset (about 20.69GB)..."
-        gdown 1URwI5bYk1f_QaN1pqBIK890sJt0stInZ
+        echo "Downloading flickr30k dataset (about 4.15GB)..."
+        gdown 1H3gjm-i0-9fr0YpXcYIJsQjY2dfWEY83
 
         echo "Dataset downloaded, now decompressing..."
-        tar -xf ${DIR}/wikidiverse.tar -C ${DIR}
+        tar -xf ${DIR}/flickr30k.tar -C ${DIR}
 
         echo "Removing compressed file..."
-        rm -f ${DIR}/wikidiverse.tar
+        rm -f ${DIR}/flickr30k.tar
 
-        echo -e "${GREEN}wikidiverse dataset downloaded!${NC}"
+        echo -e "${GREEN}flickr30k dataset downloaded!${NC}"
     else
-        echo -e "${RED}wikidiverse dataset already exists under ${DIR}/wikidiverse/!"
+        echo -e "${RED}flickr30k dataset already exists under ${DIR}/flickr30k/!"
 fi
 }
-
-quora_minilm()
-{
-    if [ ! -d "${DIR}/quora-MiniLM-L6-v2/" ];
-    then
-        echo "Downloading finetuned model for quora (about 79.9MB)..."
-        gdown 1ch9xDDnLWkx0TcIsK1ckRcWfK3h-10Oj
-
-        echo "Dataset downloaded, now decompressing..."
-        unzip ${DIR}/quora-MiniLM-L6-v2.zip
-
-        echo "Removing compressed file..."
-        rm -f ${DIR}/quora-MiniLM-L6-v2.zip
-
-        echo -e "${GREEN}Finetuned model for quora downloaded!${NC}"
-    else
-        echo -e "${RED}Finetuned model for quora already exists under ${DIR}/quora-MiniLM-L6-v2/!"
-fi
-}
-
-twitter_minilm()
-{
-    if [ ! -d "${DIR}/twitterall-MiniLM-L6-v2/" ];
-    then
-        echo "Downloading finetuned model for twitter (about 79.9MB)..."
-        gdown 1Fxw7xPMKhOtlMvjXnIOoJy1jvMH8B6Hi
-
-        echo "Dataset downloaded, now decompressing..."
-        unzip ${DIR}/twitterall-MiniLM-L6-v2.zip
-
-        echo "Removing compressed file..."
-        rm -f ${DIR}/twitterall-MiniLM-L6-v2.zip
-
-        echo -e "${GREEN}Finetuned model for twitter downloaded!${NC}"
-    else
-        echo -e "${RED}Finetuned model for twitter already exists under ${DIR}/twitterall-MiniLM-L6-v2/!"
-fi
-}
-
-stackoverflow_proxy()
-{
-    if [ ! -d "${DIR}/stackoverflow_proxy/" ];
-    then
-        echo "Downloading finetuned model for stackoverflow (about 79.9MB)..."
-        gdown 1JlP7mnZaM7gb96Q8ZNy8ivflAm5zS93G
-
-        echo "Dataset downloaded, now decompressing..."
-        tar -xf ${DIR}/stackoverflow_proxy.tar -C ${DIR}
-
-        echo "Removing compressed file..."
-        rm -f ${DIR}/stackoverflow_proxy.tar
-
-        echo -e "${GREEN}Finetuned model for stackoverflow downloaded!${NC}"
-    else
-        echo -e "${RED}Finetuned model for stackoverflow already exists under ${DIR}/stackoverflow_proxy/!"
-fi
-}
-
 
 Download() {
     for data in $ARGS
@@ -267,23 +184,11 @@ Download() {
             city_vehicle )
                 city_vehicle
                 ;;
-            city_vehicle_2 )
-                city_vehicle_2
-                ;;
             city_human )
                 city_human
                 ;;
-            quora_minilm )
-                quora_minilm
-                ;;
-            twitter_minilm )
-                twitter_minilm
-                ;;
-            stackoverflow_proxy )
-                stackoverflow_proxy
-                ;;
-            wikidiverse )
-                wikidiverse
+            flickr30k )
+                flickr30k
                 ;;
         esac
     done
@@ -304,7 +209,16 @@ Remove() {
             company )
                 rm -rf  ${DIR}/$data;
                 ;;
+            stackoverflow )
+                rm -rf  ${DIR}/$data;
+                ;;
             city_vehicle )
+                rm -rf  ${DIR}/$data;
+                ;;
+            city_human )
+                rm -rf  ${DIR}/$data;
+                ;;
+            flickr30k )
                 rm -rf  ${DIR}/$data;
                 ;;
         esac
