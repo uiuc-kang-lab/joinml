@@ -18,7 +18,7 @@ class Estimates:
     
     def save(self, output_file: str, surfix: str = ""):
         output_file = output_file.split(".")[0] + surfix + ".jsonl"
-        with open("output_file", "a+") as f:
+        with open(f"{output_file}", "a+") as f:
             json.dump({
                 "est": self.est,
                 "lb": self.lb,

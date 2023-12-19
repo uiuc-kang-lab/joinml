@@ -72,13 +72,20 @@ def calculate_score_for_tables(embeddings1: np.ndarray, embeddings2: np.ndarray)
     scores /= 2
     return scores
 
-def set_up_logging(log_file: str):
+def set_up_logging(log_file: str, log_level: str="INFO"):
     import sys, os
+    if log_level == "INFO":
+        level = logging.INFO
+    elif log_level == "DEBUG":
+        level = logging.DEBUG
+    else:
+        raise NotImplementedError(f"Log level {log_level} not implemented.")
+
     logging.basicConfig(
-        level=logging.INFO,
+        level=level,
         format="%(asctime)s [%(levelname)s] %(message)s",
         filename=log_file,
-        filemode="a+",
+        filemode="w",
         force=True
     )
 

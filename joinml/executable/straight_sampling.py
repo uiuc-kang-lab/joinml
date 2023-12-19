@@ -11,7 +11,7 @@ import numpy as np
 
 
 def run(config: Config):
-    set_up_logging(config.log_path)
+    set_up_logging(config.log_path, config.log_level)
 
     # log config
     logging.info(config)
@@ -76,20 +76,18 @@ def run(config: Config):
         sum_result = m * np.prod(dataset_sizes, dtype=np.float32).item()
         ci_upper *= np.prod(dataset_sizes)
         ci_lower *= np.prod(dataset_sizes)
-        ci_upper_error = (ci_upper - sum_gt) / sum_gt
-        ci_lower_error = (ci_lower - sum_gt) / sum_gt
-        true_error = (sum_result - sum_gt) / sum_gt
-        logging.info(f"estimate sum results {sum_result} confidence interval {ci_lower} {ci_upper} true error {true_error} confidence interval error {ci_lower_error} {ci_upper_error}")
+        sum_est = Estimates(sum_gt, sum_result, ci_lower, ci_upper)
+        sum_est.log()
+        sum_est.save(config.output_file, surfix="_sum")
         # calculate gaussian confidence interval for count
         ci_lower, ci_upper = get_ci_gaussian(sample_count_results, config.confidence_level)
         m = np.mean(sample_count_results).item()
         count_result = m * np.prod(dataset_sizes, dtype=np.float32).item()
         ci_upper *= np.prod(dataset_sizes)
         ci_lower *= np.prod(dataset_sizes)
-        ci_upper_error = (ci_upper - count_gt) / count_gt
-        ci_lower_error = (ci_lower - count_gt) / count_gt
-        true_error = (count_result - count_gt) / count_gt
-        logging.info(f"estimate count results {count_result} confidence interval {ci_lower} {ci_upper} true error {true_error} confidence interval error {ci_lower_error} {ci_upper_error}")
+        count_est = Estimates(count_gt, count_result, ci_lower, ci_upper)
+        count_est.log()
+        count_est.save(config.output_file, surfix="_count")
     else:
         m_sums = []
         m_counts = []
