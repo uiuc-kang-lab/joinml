@@ -20,11 +20,11 @@ class Estimates:
         output_file = output_file.split(".")[0] + surfix + ".jsonl"
         with open(f"{output_file}", "a+") as f:
             json.dump({
-                "est": self.est,
-                "lb": self.lb,
-                "ub": self.ub,
-                "true_error": self.true_error,
-                "lb_error": self.lb_error,
-                "ub_error": self.ub_error
+                "est": float(self.est),
+                "lb": float(self.lb),
+                "ub": float(self.ub),
+                "true_error": float(self.true_error),
+                "lb_error": float(self.lb_error),
+                "ub_error": float(self.ub_error)
                 }, f)
             f.write("\n")

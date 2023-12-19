@@ -32,6 +32,8 @@ def get_proxy_score(config: Config, dataset: JoinDataset) -> np.ndarray:
     # check cache for proxy scores
     proxy_store_path = f"{config.cache_path}/{config.dataset_name}_{config.proxy.split('/')[-1]}_scores.npy"
     dataset_sizes = dataset.get_sizes()
+    if config.is_self_join:
+        dataset_sizes = [dataset_sizes[0], dataset_sizes[0]]
     if config.proxy_score_cache and os.path.exists(proxy_store_path):
         logging.info("Loading proxy scores from %s", proxy_store_path)
         proxy_scores = np.load(proxy_store_path)
@@ -56,6 +58,8 @@ def get_proxy_score(config: Config, dataset: JoinDataset) -> np.ndarray:
 
 def get_proxy_rank(config: Config, dataset: JoinDataset, proxy_scores: np.ndarray|None=None):
     dataset_sizes = dataset.get_sizes()
+    if config.is_self_join:
+        dataset_sizes = [dataset_sizes[0], dataset_sizes[0]]
     if proxy_scores is None:
         proxy_scores = get_proxy_score(config, dataset)
     proxy_rank_store_path = f"{config.cache_path}/{config.dataset_name}_{config.proxy.split('/')[-1]}_rank.npy"

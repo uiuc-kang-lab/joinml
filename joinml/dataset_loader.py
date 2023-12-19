@@ -56,12 +56,12 @@ class TextDataset(JoinDataset):
     def get_statistics(self, table_ids: List[int]) -> float:
         id1, id2 = table_ids
         if self.dataset == "quora":
-            length1 = self.tables[0]["length"][id1].split(" ")
-            length2 = self.tables[0]["length"][id2].split(" ")
+            length1 = self.tables[0]["length"][id1]
+            length2 = self.tables[0]["length"][id2]
             return abs(length1 - length2)
         elif self.dataset == "twitter":
-            length1 = self.tables[0]["length"][id1].split(" ")
-            length2 = self.tables[0]["length"][id2].split(" ")
+            length1 = self.tables[0]["length"][id1]
+            length2 = self.tables[0]["length"][id2]
             return length1 / length2
         elif self.dataset == "stackoverflow":
             view_count = self.tables[0]["view_count"][id1]
