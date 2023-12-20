@@ -103,6 +103,7 @@ def run(config: Config):
             m_sums.append(m_sum)
             m_counts.append(m_count)
             avgs.append(avg)
+            logging.debug(f"trial {trial} avg {avg} sum {m_sum} count {m_count}")
         m_sums = np.array(m_sums)
         m_counts = np.array(m_counts)
         avg_results = np.array(avgs)

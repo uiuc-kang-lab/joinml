@@ -15,11 +15,11 @@ class Config:
     is_self_join: bool = True
     confidence_level: float=0.95
     proxy_score_cache: bool = True
-    proxy_normalizing_style: str = "proportional"
+    proxy_normalizing_style: str = "proportional" # [sqrt, proportional]
     oracle_budget: int = 1000000
     max_blocking_ratio: float = 0.2
     num_strata: int = 11
-    bootstrap_trials: int = 10000
+    bootstrap_trials: int = 10000 # [0, 10000] bis/(is/uniform avg) 10000, for others both works
     task: str = "bis" # [bis, is, uniform, recall]
     output_file: str = f"{dataset_name}.jsonl"
-    log_level: str = "into" # [info, debug]
+    log_level: str = "INFO" # [INFO, DEBUG]

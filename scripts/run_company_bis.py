@@ -3,20 +3,20 @@ from joinml.config import Config
 import time
 
 config = Config(
-    dataset_name="city_vehicle",
-    proxy="reid",
+    dataset_name="company",
+    proxy="all-MiniLM-L6-v2",
     is_self_join=False,
-    log_path=f"logs/city_vehicle-uniform_{time.time()}.log",
+    log_path=f"logs/company-bis_{time.time()}.log",
     device="cpu",
     cache_path="../.cache/joinml",
     proxy_score_cache=True,
-    task="uniform",
+    task="bis",
     oracle_budget=1000000,
     num_strata=11,
     max_blocking_ratio=0.2,
     bootstrap_trials=10000,
     log_level="DEBUG",
-    output_file="city_vehicle-uniform.jsonl"
+    output_file="company-bis.jsonl"
 )
 
 run(config)
