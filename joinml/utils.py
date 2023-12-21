@@ -74,9 +74,10 @@ def calculate_score_for_tables(embeddings1: np.ndarray, embeddings2: np.ndarray)
 
 def set_up_logging(log_file: str, log_level: str="INFO"):
     import sys, os
-    if log_level == "INFO":
+    log_level = str.lower(log_level)
+    if log_level == "info":
         level = logging.INFO
-    elif log_level == "DEBUG":
+    elif log_level == "debug":
         level = logging.DEBUG
     else:
         raise NotImplementedError(f"Log level {log_level} not implemented.")

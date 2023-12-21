@@ -22,4 +22,4 @@ class Config:
     bootstrap_trials: int = 10000
     task: str = "bis" # [bis, is, uniform, recall]
     output_file: str = f"{dataset_name}.jsonl"
-    log_level: str = "into" # [info, debug]
+    log_level: str = "info" # [info, debug]
