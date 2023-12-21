@@ -145,7 +145,7 @@ def load_dataset(config: Config):
     modality = dataset2modality[config.dataset_name]
     if modality == "text":
         return TextDataset(config)
-    elif modality == "images":
+    elif modality == "image":
         return VideoDataset(config)
     elif modality == "multimodal":
         return MultiModalDataset(config)
