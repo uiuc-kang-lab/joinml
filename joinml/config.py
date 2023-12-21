@@ -22,4 +22,4 @@ class Config:
     bootstrap_trials: int = 10000 # [0, 10000] bis/(is/uniform avg) 10000, for others both works
     task: str = "bis" # [bis, is, uniform, recall]
     output_file: str = f"{dataset_name}.jsonl"
-    log_level: str = "INFO" # [INFO, DEBUG]
+    log_level: str = "info" # [info, debug]
