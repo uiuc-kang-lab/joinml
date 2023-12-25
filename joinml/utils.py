@@ -8,6 +8,7 @@ from numba import jit
 import logging
 import sys
 from scipy import stats
+import pandas as pd
 
 csv.field_size_limit(sys.maxsize)
 
@@ -64,8 +65,8 @@ def calculate_score_for_tables(embeddings1: np.ndarray, embeddings2: np.ndarray)
     scores = np.ones((len(embeddings1), len(embeddings2)))
     for i in range(len(embeddings1)):
         for j in range(len(embeddings2)):
-            norm1 = np.linalg.norm(embeddings1[i][0]).item()
-            norm2 = np.linalg.norm(embeddings2[j][1]).item()
+            norm1 = np.linalg.norm(embeddings1[i]).item()
+            norm2 = np.linalg.norm(embeddings2[j]).item()
             scores[i][j] = np.dot(embeddings1[i], embeddings2[j]) / (norm1 * norm2)
     # normalize scores from -1, 1 to 0, 1
     scores += 1
@@ -140,3 +141,7 @@ def defensive_mix(weights, ratio: float, mixture: str="random"):
     else:
         raise NotImplementedError(f"Defensive mixture {mixture} not implemented.")
     return weights
+
+def weighted_sample_pd(weights: np.ndarray, size: int, replace: bool=False):
+    """Sample from a weighted array using pandas."""
+    return pd.Series(weights).sample(n=size, replace=replace, weights=weights).index

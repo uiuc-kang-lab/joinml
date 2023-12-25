@@ -37,6 +37,7 @@ class TextDataset(JoinDataset):
     def __init__(self, config: Config):
         self.tables = []
         table_files = glob.glob(f"{config.data_path}/{config.dataset_name}/data/table*.csv")
+        table_files = sorted(table_files)
         for table_file in table_files:
             table_data = pd.read_csv(table_file)
             table_data["length"] = table_data["join_col"].apply(lambda x: len(x.split(" ")))
@@ -64,8 +65,8 @@ class TextDataset(JoinDataset):
             length2 = self.tables[0]["length"][id2]
             return length1 / length2
         elif self.dataset == "stackoverflow":
-            view_count = self.tables[0]["view_count"][id1]
-            return view_count
+            answer_count = self.tables[0]["answer_count"][id1]
+            return answer_count
         else:
             return 1
 
@@ -77,7 +78,7 @@ class TextDataset(JoinDataset):
             return self.tables[0]["length"].min() / self.tables[0]["length"].max(), \
                    self.tables[0]["length"].max() / self.tables[0]["length"].min()
         elif self.dataset == "stackoverflow":
-            return self.tables[0]["view_count"].min(), self.tables[0]["view_count"].max()
+            return self.tables[0]["answer_count"].min(), self.tables[0]["answer_count"].max()
         else:
             return 0, 1
         
@@ -86,6 +87,7 @@ class VideoDataset(JoinDataset):
     def __init__(self, config: Config):
         self.tables = []
         table_files = glob.glob(f"{config.data_path}/{config.dataset_name}/data/table*.csv")
+        table_files = sorted(table_files)
         self.dataset = config.dataset_name
         self.path = f"{config.data_path}/{config.dataset_name}"
         for i, table_file in enumerate(table_files):
@@ -104,12 +106,12 @@ class VideoDataset(JoinDataset):
     
     def get_statistics(self, table_ids: List[int]) -> float:
         id1, id2 = table_ids
-        x_pos1 = self.tables[0]["x_pos"][id1]
-        x_pos2 = self.tables[1]["x_pos"][id2]
+        x_pos1 = self.tables[0]["x"][id1]
+        x_pos2 = self.tables[1]["x"][id2]
         return abs(x_pos1 - x_pos2)
 
     def get_min_max_statistics(self):
-        return self.tables[0]["x_pos"].min() - self.tables[1]["x_pos"].max(), self.tables[0]["x_pos"].max() - self.tables[1]["x_pos"].min()
+        return self.tables[0]["x"].min() - self.tables[1]["x"].max(), self.tables[0]["x"].max() - self.tables[1]["x"].min()
 
 class MultiModalDataset(JoinDataset):
     def __init__(self, config: Config):

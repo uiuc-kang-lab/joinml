@@ -34,7 +34,9 @@ def run(config: Config):
         proxy_weights = normalize(proxy_score, style="sqrt")
 
         # weighted sample
-        sample = np.random.choice(len(proxy_weights), size=config.oracle_budget, p=proxy_weights)
+        p = np.array(proxy_weights).astype(np.float64)
+        p /= np.sum(p)
+        sample = np.random.choice(len(proxy_weights), size=config.oracle_budget, p=p, replace=True)
         sample_ids = np.array(np.unravel_index(sample, dataset_sizes)).T
         sample_results = []
         sample_count_results = []
@@ -76,7 +78,7 @@ def run(config: Config):
         sum_result = m * np.prod(dataset_sizes, dtype=np.float32).item()
         ci_upper *= np.prod(dataset_sizes)
         ci_lower *= np.prod(dataset_sizes)
-        sum_est = Estimates(sum_gt, sum_result, ci_lower, ci_upper)
+        sum_est = Estimates(config.oracle_budget, sum_gt, sum_result, ci_lower, ci_upper)
         sum_est.log()
         sum_est.save(config.output_file, surfix="_sum")
         # calculate gaussian confidence interval for count
@@ -85,7 +87,7 @@ def run(config: Config):
         count_result = m * np.prod(dataset_sizes, dtype=np.float32).item()
         ci_upper *= np.prod(dataset_sizes)
         ci_lower *= np.prod(dataset_sizes)
-        count_est = Estimates(count_gt, count_result, ci_lower, ci_upper)
+        count_est = Estimates(config.oracle_budget, count_gt, count_result, ci_lower, ci_upper)
         count_est.log()
         count_est.save(config.output_file, surfix="_count")
     else:
@@ -99,7 +101,7 @@ def run(config: Config):
             resample_count_results = sample_count_results[resample]
             m_sum = np.mean(resample_results).item()
             m_count = np.mean(resample_count_results).item()
-            avg = m_sum / m_count
+            avg = m_sum / m_count if m_count > 0 else 0
             m_sums.append(m_sum)
             m_counts.append(m_count)
             avgs.append(avg)
@@ -113,18 +115,18 @@ def run(config: Config):
         # statistics for avg
         avg_estimates = np.mean(avg_results).item()
         avg_lower, avg_upper = get_ci_bootstrap(avg_results, confidence_level=config.confidence_level)
-        avg_est = Estimates(avg_gt, avg_estimates, avg_lower, avg_upper)
+        avg_est = Estimates(config.oracle_budget, avg_gt, avg_estimates, avg_lower, avg_upper)
         avg_est.log()
         avg_est.save(config.output_file, surfix="_avg")
         # statistics for sum
         sum_estimates = np.mean(sum_results).item()
         sum_lower, sum_upper = get_ci_bootstrap(sum_results, confidence_level=config.confidence_level)
-        sum_est = Estimates(sum_gt, sum_estimates, sum_lower, sum_upper)
+        sum_est = Estimates(config.oracle_budget, sum_gt, sum_estimates, sum_lower, sum_upper)
         sum_est.log()
         sum_est.save(config.output_file, surfix="_sum")
         # statistics for count
         count_estimates = np.mean(count_results).item()
         count_lower, count_upper = get_ci_bootstrap(count_results, confidence_level=config.confidence_level)
-        count_est = Estimates(count_gt, count_estimates, count_lower, count_upper)
+        count_est = Estimates(config.oracle_budget, count_gt, count_estimates, count_lower, count_upper)
         count_est.log()
         count_est.save(config.output_file, surfix="_count")

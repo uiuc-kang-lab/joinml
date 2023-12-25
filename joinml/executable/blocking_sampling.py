@@ -4,7 +4,7 @@ from joinml.oracle import Oracle
 from joinml.config import Config
 from joinml.utils import set_up_logging, normalize
 from joinml.estimates import Estimates
-from joinml.utils import get_ci_bootstrap
+from joinml.utils import get_ci_bootstrap, weighted_sample_pd
 
 import os
 import logging
@@ -61,9 +61,9 @@ def naive_blocking_sampling(config: Config,
             (blocking_count_results + sampling_count_upper_bound)
     avg_estimate = blocking_sum_results / blocking_count_results
 
-    count_est = Estimates(count_gt, count_estimate, count_lower_bound, count_upper_bound)
-    sum_est = Estimates(sum_gt, sum_estimate, sum_lower_bound, sum_upper_bound)
-    avg_est = Estimates(avg_gt, avg_estimate, avg_lower_bound, avg_upper_bound)
+    count_est = Estimates(config.oracle_budget, count_gt, count_estimate, count_lower_bound, count_upper_bound)
+    sum_est = Estimates(config.oracle_budget, sum_gt, sum_estimate, sum_lower_bound, sum_upper_bound)
+    avg_est = Estimates(config.oracle_budget, avg_gt, avg_estimate, avg_lower_bound, avg_upper_bound)
     count_est.log()
     sum_est.log()
     avg_est.log()
@@ -100,10 +100,11 @@ def bootstrap_blocking_sampling(config, dataset, oracle, dataset_sizes, count_gt
         strata_resample_results = []
         strata_resample_count_results = []
         for i in range(len(strata)):
-            resample_results = np.random.choice(strata_sample_results[i], size=len(strata_sample_results[i]), replace=True)
+            resample = np.random.choice(len(strata_sample_results[i]), size=len(strata_sample_results[i]), replace=True) # bug
+            resample_results = strata_sample_results[i][resample]
+            resample_count_results = strata_sample_count_results[i][resample]
             resample_var = np.var(resample_results)
             resample_mean = np.mean(resample_results)
-            resample_count_results = np.random.choice(strata_sample_count_results[i], size=len(strata_sample_count_results[i]), replace=True)
             resample_count_var = np.var(resample_count_results)
             resample_count_mean = np.mean(resample_count_results)
             strata_resample_results.append({
@@ -188,9 +189,9 @@ def bootstrap_blocking_sampling(config, dataset, oracle, dataset_sizes, count_gt
     avg_mean = float(np.mean(bootstrap_results["avg"]))
     avg_lb, avg_ub = get_ci_bootstrap(bootstrap_results["avg"], config.confidence_level)
     # log the results
-    count_est = Estimates(count_gt, count_mean, count_lb, count_ub)
-    sum_est = Estimates(sum_gt, sum_mean, sum_lb, sum_ub)
-    avg_est = Estimates(avg_gt, avg_mean, avg_lb, avg_ub)
+    count_est = Estimates(config.oracle_budget, count_gt, count_mean, count_lb, count_ub)
+    sum_est = Estimates(config.oracle_budget, sum_gt, sum_mean, sum_lb, sum_ub)
+    avg_est = Estimates(config.oracle_budget, avg_gt, avg_mean, avg_lb, avg_ub)
     count_est.log()
     sum_est.log()
     avg_est.log()
@@ -256,7 +257,7 @@ def run(config: Config):
     for i, (stratum_begin, stratum_end) in enumerate(strata):
         stratum_proxy_scores = strata_proxy_scores[i]
         stratum_proxy_weights = normalize(stratum_proxy_scores)
-        stratum_sample = np.random.choice(len(stratum_proxy_weights), size=strata_sample_sizes[i], p=stratum_proxy_weights)
+        stratum_sample = weighted_sample_pd(stratum_proxy_scores, strata_sample_sizes[i], replace=True)
         stratum_sample_ids = strata_population[i][stratum_sample]
         stratum_sample_ids = np.array(np.unravel_index(stratum_sample_ids, dataset_sizes)).T
         stratum_sample_count_results = []
