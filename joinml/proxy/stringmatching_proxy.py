@@ -5,6 +5,7 @@ from joinml.proxy.proxy import Proxy
 from py_stringmatching.tokenizer.alphanumeric_tokenizer import AlphanumericTokenizer
 from joinml.config import Config
 from tqdm import tqdm
+from multiprocessing import Pool
 
 
 available_proxy = {
@@ -38,6 +39,10 @@ class StringMatchingProxy(Proxy):
         super().__init__()
         proxy_name = config.proxy
         self.tokenizer = None
+        self.parallelProxyCalculation = config.parallelProxyCalculation
+        if self.parallelProxyCalculation:
+            self.batchSizePerProxyProcess = config.batchSizePerProxyProcess
+            self.numProxyProcess = config.numProxyProcess
         if proxy_name not in available_proxy:
             raise ValueError(f"Proxy {proxy_name} is not available.")
         # elif proxy_name == "Affine":
@@ -158,9 +163,24 @@ class StringMatchingProxy(Proxy):
             table2 = [self.tokenizer.tokenize(x) for x in table2]
         
         scores = np.zeros((len(table1), len(table2)))
+        self.__proxyPreProcess(self.proxy, table1)
 
-        for id1, id2 in tqdm(product(list(range(len(table1))), list(range(len(table2))))):
-            scores[id1, id2] = self.sim_func(table1[id1], table2[id2])
+        if(self.parallelProxyCalculation and self.__isParallelble(proxy)):
+            thisBatch = []
+            batchSize = self.batchSizePerProxyProcess * self.numProxyProcess
+            nextPosition = 0
+            
+            for id1, id2 in tqdm(product(list(range(len(table1))), list(range(len(table2))))):
+                thisBatch.append((table1[id1], table2[id2]))
+                if len(thisBatch) >= batchSize:
+                    self.__batchComputation(thisBatch=thisBatch,scores=scores,nextPosition=nextPosition,
+                                            table1Size=len(table1))
+                    thisBatch = []
+            self.__batchComputation(numProcess=self.numProxyProcess, thisBatch=thisBatch,scores=scores, 
+                                            nextPosition=nextPosition, table1Size=len(table1))
+        else:
+            for id1, id2 in tqdm(product(list(range(len(table1))), list(range(len(table2))))):
+                scores[id1, id2] = self.sim_func(table1[id1], table2[id2])
         
         return scores
     
@@ -175,8 +195,34 @@ class StringMatchingProxy(Proxy):
             scores[i] = self.sim_func(t[0], t[1])
 
         return scores
-    
 
+    # tfIdf need document frequency table
+    def __proxyPreProcess(self, proxy, corpusTable):
+        from py_stringmatching.similarity_measure.soft_tfidf import SoftTfIdf
+        from py_stringmatching.similarity_measure.tfidf import TfIdf
+        if isinstance(proxy, SoftTfIdf) or isinstance(proxy, TfIdf):
+            proxy.__corpus_list = corpusTable
+            proxy.__compute_document_frequency()
+    
+    def __isParallelble(self, proxy) -> bool:
+        from py_stringmatching.similarity_measure.soft_tfidf import SoftTfIdf
+        from py_stringmatching.similarity_measure.tfidf import TfIdf
+        if isinstance(proxy, SoftTfIdf) or isinstance(proxy, TfIdf):
+            return True
+        return False
+    
+    def __cordinateOneDToTwoD(self, cordinate: int, table1Size: int) ->tuple:
+        return (cordinate/table1Size, cordinate%table1Size)
+
+    def __batchComputation(self, thisBatch: list, scores: np.ndarray, 
+                           nextPosition: int, table1Size: int)->int:
+        with Pool(processes=self.numProxyProcess) as pool:
+            pool.map(lambda l: self.sim_func(l[0],[1]), thisBatch)
+        for idx, newScore in enumerate(thisBatch):
+            cordinate = self.__cordinateOneDToTwoD(cordinate=idx+nextPosition, table1Size=table1Size)
+            scores[cordinate[0],cordinate[1]] = newScore
+            nextPosition+=1
+        return nextPosition
 
 if __name__ == "__main__":
     config = Config()

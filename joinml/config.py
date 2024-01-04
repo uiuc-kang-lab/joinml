@@ -23,3 +23,6 @@ class Config:
     task: str = "bis" # [bis, is, uniform, recall]
     output_file: str = f"{dataset_name}.jsonl"
     log_level: str = "info" # [info, debug]
+    parallelProxyCalculation: bool = False
+    numProxyProcess: int = 80
+    batchSizePerProxyProcess: int = 1000
