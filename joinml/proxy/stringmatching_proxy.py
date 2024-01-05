@@ -232,7 +232,7 @@ class StringMatchingProxy(Proxy):
         return True
     
     def __batchComputationTable(self, thisBatch: list, scores: np.ndarray, 
-                           nextPosition: int, table1Size: int)->int:
+                           nextPosition: int, table1Size: int) -> int:
         with Pool(processes=self.numProxyProcess) as pool:
             result = pool.map(self._proxyMappingFunction, thisBatch)
         for idx, newScore in enumerate(result):
@@ -240,14 +240,14 @@ class StringMatchingProxy(Proxy):
         return nextPosition + len(result)
     
     def __batchComputationTuple(self, thisBatch: list, scores: np.ndarray, 
-                           nextPosition: int)->int:
+                           nextPosition: int) -> int:
         with Pool(processes=self.numProxyProcess) as pool:
             result = pool.map(self._proxyMappingFunction, thisBatch)
         for idx, newScore in enumerate(result):
             scores[idx+nextPosition] = newScore
         return nextPosition + len(result)
 
-    def _proxyMappingFunction(self,input: tuple)->int:
+    def _proxyMappingFunction(self,input: tuple) -> int:
         return input[0](input[1],input[2])
 
 if __name__ == "__main__":
