@@ -164,7 +164,7 @@ class StringMatchingProxy(Proxy):
             table2 = [self.tokenizer.tokenize(x) for x in table2]
         
         scores = np.zeros((len(table1), len(table2)))
-        self.__proxyPreProcess(self.proxy, table1)
+        self.__proxyPreProcess(self.proxy, table1, table2)
 
         if(self.parallelProxyCalculation and self.__isParallelble()):
             batchSize = self.batchSizePerProxyProcess * self.numProxyProcess
@@ -195,6 +195,12 @@ class StringMatchingProxy(Proxy):
                 thisBatch = [None] * batchSize
                 curBatchSize = 0
                 nextPosition = 0
+        if self.tokenizer is not None:
+            corpus = []
+            for t in tuples:
+                corpus.append(self.tokenizer.tokenize(t[0]))
+                corpus.append(self.tokenizer.tokenize(t[1]))
+            self.__proxyPreProcess(self.proxy,corpus)
 
         for i in range(len(tuples)):
             t = tuples[i]
@@ -219,11 +225,13 @@ class StringMatchingProxy(Proxy):
         return scores
 
     # tfIdf need document frequency table
-    def __proxyPreProcess(self, proxy, corpusTable):
+    def __proxyPreProcess(self, proxy, corpusTable1: list, corpusTable2: list = None):
         from py_stringmatching.similarity_measure.soft_tfidf import SoftTfIdf
         from py_stringmatching.similarity_measure.tfidf import TfIdf
         if isinstance(proxy, SoftTfIdf) or isinstance(proxy, TfIdf):
-            proxy.__init__(corpusTable)
+            proxy.__init__(corpusTable1)
+            if corpusTable2:
+                proxy.__init__(corpusTable2)
     
     def __isParallelble(self) -> bool:
         from py_stringmatching.similarity_measure.hamming_distance import HammingDistance
@@ -280,14 +288,14 @@ if __name__ == "__main__":
 
     import time
     run_time = {}
-    for proxy_name in available_proxy:
+    for proxy_name in ["Soft TF/IDF"]:#available_proxy:
         print(f"Proxy: {proxy_name}")
         config.proxy = proxy_name
         proxy = StringMatchingProxy(config)
         start = time.time()
         for _ in range(1):
             print(proxy.get_proxy_score_for_tables(table1, table2))
-            #print(proxy.get_proxy_score_for_tuples(tuples))
+            print(proxy.get_proxy_score_for_tuples(tuples))
         end = time.time()
         run_time[proxy_name] = end - start
     print(run_time)
