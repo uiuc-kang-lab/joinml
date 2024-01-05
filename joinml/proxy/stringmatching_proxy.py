@@ -43,7 +43,7 @@ class StringMatchingProxy(Proxy):
         self.parallelProxyCalculation = config.parallelProxyCalculation
         if self.parallelProxyCalculation:
             self.batchSizePerProxyProcess = config.batchSizePerProxyProcess
-            self.numProxyProcess = cpu_count() * config.numProcessPerCPU
+            self.numProxyProcess = int(cpu_count() * config.numProcessPerCPU)
         if proxy_name not in available_proxy:
             raise ValueError(f"Proxy {proxy_name} is not available.")
         # elif proxy_name == "Affine":
