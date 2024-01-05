@@ -226,8 +226,8 @@ class StringMatchingProxy(Proxy):
             proxy.__init__(corpusTable)
     
     def __isParallelble(self) -> bool:
-        unparallizableProxy = ["HammingDistance"]
-        if self.proxy.__class__.__name__ in unparallizableProxy:
+        from py_stringmatching.similarity_measure.hamming_distance import HammingDistance
+        if isinstance(self.proxy,HammingDistance):
             return False
         return True
     
