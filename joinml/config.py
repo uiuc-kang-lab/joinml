@@ -24,4 +24,5 @@ class Config:
     output_file: str = f"{dataset_name}.jsonl"
     log_level: str = "info" # [info, debug]
     parallelProxyCalculation: bool = True
-    batchSizePerProxyProcess: int = 1
+    batchSizePerProxyProcess: int = 10000
+    numProcessPerCPU = 1

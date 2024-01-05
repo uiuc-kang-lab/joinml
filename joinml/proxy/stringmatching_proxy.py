@@ -43,7 +43,7 @@ class StringMatchingProxy(Proxy):
         self.parallelProxyCalculation = config.parallelProxyCalculation
         if self.parallelProxyCalculation:
             self.batchSizePerProxyProcess = config.batchSizePerProxyProcess
-            self.numProxyProcess = cpu_count()
+            self.numProxyProcess = cpu_count() * config.numProcessPerCPU
         if proxy_name not in available_proxy:
             raise ValueError(f"Proxy {proxy_name} is not available.")
         # elif proxy_name == "Affine":
@@ -287,7 +287,7 @@ if __name__ == "__main__":
         start = time.time()
         for _ in range(1):
             print(proxy.get_proxy_score_for_tables(table1, table2))
-            print(proxy.get_proxy_score_for_tuples(tuples))
+            #print(proxy.get_proxy_score_for_tuples(tuples))
         end = time.time()
         run_time[proxy_name] = end - start
     print(run_time)
