@@ -4,7 +4,7 @@ from dataclasses import dataclass
 class Config:
     """Configuration class for JoinML."""
     data_path: str = "data"
-    cache_path: str = "."
+    cache_path: str|None = "."
     model_cache_path: str = f"{cache_path}/models"
     log_path: str = "logs/test.log"
     dataset_name: str = "twitter"
