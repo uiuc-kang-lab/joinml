@@ -44,7 +44,6 @@ class StringMatchingProxy(Proxy):
         self.tokenizer = None
         self.parallelProxyCalculation = config.parallelProxyCalculation
         if self.parallelProxyCalculation:
-            self.batchSizePerProxyProcess = config.batchSizePerProxyProcess
             self.numProxyProcess = int(mp.cpu_count() * config.numProcessPerCPU)
         if proxy_name not in available_proxy:
             raise ValueError(f"Proxy {proxy_name} is not available.")
