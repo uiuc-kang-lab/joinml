@@ -234,6 +234,7 @@ class StringMatchingProxy(Proxy):
             return False
         return True
     
+    #Note that parallel will cause slight error, around 1e^-17
     def __parallelProcessing(self,inputQueue: mp.Queue, outputQueue: mp.Queue, table2: list):
         while(True):
             input = inputQueue.get()
