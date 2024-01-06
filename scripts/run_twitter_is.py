@@ -1,3 +1,6 @@
+import sys
+sys.path.append("/users/kaimeng2/join_ml")
+
 from joinml.run import run
 from joinml.config import Config
 import time

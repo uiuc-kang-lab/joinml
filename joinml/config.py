@@ -25,4 +25,4 @@ class Config:
     log_level: str = "info" # [info, debug]
     parallelProxyCalculation: bool = True
     batchSizePerProxyProcess: int = 10000
-    numProcessPerCPU = 6 #can be non integer, >= 6 for twitter
+    numProcessPerCPU = 1 #can be non integer

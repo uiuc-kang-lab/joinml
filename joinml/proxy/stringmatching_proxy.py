@@ -5,7 +5,9 @@ from joinml.proxy.proxy import Proxy
 from py_stringmatching.tokenizer.alphanumeric_tokenizer import AlphanumericTokenizer
 from joinml.config import Config
 from tqdm import tqdm
-from multiprocessing import Pool, cpu_count
+import multiprocessing as mp
+import threading
+import time
 
 
 available_proxy = {
@@ -43,7 +45,7 @@ class StringMatchingProxy(Proxy):
         self.parallelProxyCalculation = config.parallelProxyCalculation
         if self.parallelProxyCalculation:
             self.batchSizePerProxyProcess = config.batchSizePerProxyProcess
-            self.numProxyProcess = int(cpu_count() * config.numProcessPerCPU)
+            self.numProxyProcess = int(mp.cpu_count() * config.numProcessPerCPU)
         if proxy_name not in available_proxy:
             raise ValueError(f"Proxy {proxy_name} is not available.")
         # elif proxy_name == "Affine":
@@ -167,20 +169,31 @@ class StringMatchingProxy(Proxy):
         self.__proxyPreProcess(self.proxy, table1 + table2)
 
         if(self.parallelProxyCalculation and self.__isParallelble()):
-            batchSize = self.batchSizePerProxyProcess * self.numProxyProcess
-            thisBatch = [None] * batchSize
-            curBatchSize = 0
-            nextPosition = 0
+            inputQueue = mp.Queue()
+            outputQueue = mp.Queue()
+            maxInputQueueSize = 1000
+
+            proxyProcess = []
+            for _ in range(self.numProxyProcess):
+                p = mp.Process(target=self.__parallelProcessing, args=(inputQueue,outputQueue, table2))
+                proxyProcess.append(p)
+                p.start()
+
+            reduceThread = threading.Thread(target=self.__reduceTable, args=(scores, outputQueue))
+            reduceThread.start()
+            for id1 in range(len(table1)):
+                if inputQueue.qsize()>=maxInputQueueSize:
+                    time.sleep(1)
+                inputQueue.put((id1,table1[id1]))
             
-            for id1, id2 in tqdm(product(list(range(len(table1))), list(range(len(table2))))):
-                thisBatch[curBatchSize] = (self.sim_func, table1[id1], table2[id2])
-                curBatchSize += 1
-                if curBatchSize >= batchSize:
-                    nextPosition = self.__batchComputationTable(thisBatch=thisBatch,scores=scores,
-                                                           nextPosition=nextPosition,table1Size=len(table1))
-                    curBatchSize = 0
-            self.__batchComputationTable(thisBatch=thisBatch[:curBatchSize],
-                                    scores=scores, nextPosition=nextPosition, table1Size=len(table1))
+            for _ in range(self.numProxyProcess):
+                inputQueue.put(None)
+            
+            for p in proxyProcess:
+                p.join()
+            
+            outputQueue.put(None)
+            reduceThread.join()
         else:
             for id1, id2 in tqdm(product(list(range(len(table1))), list(range(len(table2))))):
                 scores[id1, id2] = self.sim_func(table1[id1], table2[id2])
@@ -189,12 +202,7 @@ class StringMatchingProxy(Proxy):
     
     def get_proxy_score_for_tuples(self, tuples: List[List[str]]) -> np.ndarray:
         scores = np.zeros(len(tuples))
-        isParallel = self.parallelProxyCalculation and self.__isParallelble()
-        if isParallel:
-                batchSize = self.batchSizePerProxyProcess * self.numProxyProcess
-                thisBatch = [None] * batchSize
-                curBatchSize = 0
-                nextPosition = 0
+        
         if self.tokenizer is not None:
             corpus = []
             for t in tuples:
@@ -209,19 +217,8 @@ class StringMatchingProxy(Proxy):
             if self.tokenizer is not None:
                 t = [self.tokenizer.tokenize(x) for x in t]
 
-            if(isParallel):
-                thisBatch[curBatchSize] = (self.sim_func, t[0], t[1])
-                curBatchSize += 1
-                if curBatchSize >= batchSize:
-                    nextPosition = self.__batchComputationTuple(thisBatch=thisBatch,scores=scores,
-                                                        nextPosition=nextPosition)
-                    curBatchSize = 0
-            else:
-                scores[i] = self.sim_func(t[0], t[1])
+            scores[i] = self.sim_func(t[0], t[1])
 
-        if isParallel:
-            self.__batchComputationTuple(thisBatch=thisBatch[:curBatchSize],
-                                            scores=scores, nextPosition=nextPosition)
         return scores
 
     # tfIdf need document frequency table
@@ -237,24 +234,26 @@ class StringMatchingProxy(Proxy):
             return False
         return True
     
-    def __batchComputationTable(self, thisBatch: list, scores: np.ndarray, 
-                           nextPosition: int, table1Size: int) -> int:
-        with Pool(processes=self.numProxyProcess) as pool:
-            result = pool.map(self._proxyMappingFunction, thisBatch)
-        for idx, newScore in enumerate(result):
-            scores[(idx+nextPosition)//table1Size,(idx+nextPosition)%table1Size] = newScore
-        return nextPosition + len(result)
-    
-    def __batchComputationTuple(self, thisBatch: list, scores: np.ndarray, 
-                           nextPosition: int) -> int:
-        with Pool(processes=self.numProxyProcess) as pool:
-            result = pool.map(self._proxyMappingFunction, thisBatch)
-        for idx, newScore in enumerate(result):
-            scores[idx+nextPosition] = newScore
-        return nextPosition + len(result)
+    def __parallelProcessing(self,inputQueue: mp.Queue, outputQueue: mp.Queue, table2: list):
+        while(True):
+            input = inputQueue.get()
+            if input == None:
+                return
+            table1Idx = input[0]
+            table1String = input[1]
+            score = np.zeros(len(table2))
+            for idx,s in enumerate(table2):
+                score[idx] = self.sim_func(s,table1String)
+            outputQueue.put((table1Idx,score))
 
-    def _proxyMappingFunction(self,input: tuple) -> int:
-        return input[0](input[1],input[2])
+    def __reduceTable(self, output: np.ndarray, outputQueue: mp.Queue):
+        for _ in tqdm(range(output.shape[0])):
+            newItem = outputQueue.get()
+            #print(newItem[0])
+            if newItem == None:
+                print("ERR: reduce terminate early, not enough rows recieved!")
+                return
+            output[newItem[0]] = newItem[1]
 
 if __name__ == "__main__":
     config = Config()
@@ -284,7 +283,6 @@ if __name__ == "__main__":
     table2 = sentences[10:]
     tuples = list(product(sentences, sentences))
 
-    import time
     run_time = {}
     for proxy_name in available_proxy:
         print(f"Proxy: {proxy_name}")
@@ -323,3 +321,12 @@ if __name__ == "__main__":
 #  'Partial Ratio': 5.961280107498169
 #  'Partial Token Sort': 6.329225063323975, 
 #  'Editex': 28.28290581703186, 
+
+'''
+def checkTwoArrayEqual(result1, result2) -> bool:
+    for i in range(result1.shape[0]):
+        for j in range(result2.shape[1]):
+            if abs(result1[i,j] - result2[i,j]) > 1e-6:
+                return False
+    return True
+'''
