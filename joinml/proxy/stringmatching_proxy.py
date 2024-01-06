@@ -181,7 +181,7 @@ class StringMatchingProxy(Proxy):
             reduceThread = threading.Thread(target=self.__reduceTable, args=(scores, outputQueue))
             reduceThread.start()
             for id1 in range(len(table1)):
-                if inputQueue.qsize()>=maxInputQueueSize:
+                while inputQueue.qsize()>=maxInputQueueSize:
                     time.sleep(1)
                 inputQueue.put((id1,table1[id1]))
             
