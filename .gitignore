@@ -12,4 +12,5 @@ data/city_human*
 data/wikidiverse*
 data/flickr30k*
 archive
+.results
 **/model_cache

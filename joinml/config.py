@@ -23,3 +23,4 @@ class Config:
     task: str = "bis" # [bis, is, uniform, recall]
     output_file: str = f"{dataset_name}.jsonl"
     log_level: str = "info" # [info, debug]
+    blocking_ratio: float = 0.2 # only used for fix blocking sampling
