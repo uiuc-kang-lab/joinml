@@ -18,7 +18,7 @@ $ bash download.sh download <dataset_name>
 
 Step 3: Setup environment variable for proxy cache (in anaconda)
 ```bash
-$ conda env config vars set <my_var> = "path_to_cache"
+$ conda env config vars set cahce_path = "path_to_cache"
 $ conda activate <env_name>
 ```
 
