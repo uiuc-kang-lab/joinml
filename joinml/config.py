@@ -25,3 +25,4 @@ class Config:
     log_level: str = "info" # [info, debug]
     parallelProxyCalculation: bool = True
     numProcessPerCPU = 1 #can be non integer
+    blocking_ratio: float = 0.2 # only used for fix blocking sampling
