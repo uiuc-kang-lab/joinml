@@ -9,7 +9,7 @@ class Config:
     log_path: str = "logs/test.log"
     dataset_name: str = "twitter"
     seed: int = 233
-    proxy: str = "all-MiniLM-L6-v2"
+    proxy: str = "TF/IDF"
     device: str = "cpu"
     batch_size: int = 4
     is_self_join: bool = True
@@ -23,4 +23,6 @@ class Config:
     task: str = "bis" # [bis, is, uniform, recall]
     output_file: str = f"{dataset_name}.jsonl"
     log_level: str = "info" # [info, debug]
+    parallelProxyCalculation: bool = True
+    numProcessPerCPU = 1 #can be non integer
     blocking_ratio: float = 0.2 # only used for fix blocking sampling
