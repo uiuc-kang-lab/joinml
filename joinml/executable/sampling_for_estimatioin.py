@@ -177,7 +177,7 @@ def empirical_best_blocking_allocation(strata_population: List[int], strata_samp
     total_variances = []
     for i in range(1, len(strata_to_decide)):
         variance = 0
-        total_population = sum([len(strata_population[j]) for j in strata_to_decide[:i+1]])
+        total_population = sum([strata_population[j] for j in strata_to_decide[:i+1]])
         for j in strata_to_decide[:i+1]:
             variance += (strata_population[j] / total_population)**2 * \
                 (strata_population[j] - strata_sample_sizes[j]) / strata_population[j] * \
@@ -225,22 +225,7 @@ def calculate_mean_for_strata(strata_population: List[int], strata_sample_sizes:
     logging.debug(f"sampling mean: {sampling_mean}")
 
     blocking_population_size = sum([strata_population[i] for i in blocking_strata])
-    blocking_total_count = 0
-    blocking_total_sum = .0
-    for i in blocking_strata:
-        blocking_total_count += strata_count_gts[i]
-        blocking_total_sum += strata_gts[i]
-    if aggregator == "count":
-        blocking_mean = blocking_total_count / blocking_population_size
-        logging.debug(f"blocking count mean: {blocking_total_count}, blocking total count: {blocking_total_count}")
-    elif aggregator == "sum":
-        blocking_mean = blocking_total_sum / blocking_population_size
-        logging.debug(f"blocking sum mean: {blocking_total_sum}, blocking total sum: {blocking_total_sum}")
-    elif aggregator == "avg":
-        blocking_mean = blocking_total_sum / blocking_total_count
-        logging.debug(f"blocking avg mean: {blocking_total_sum}")
-    else:
-        raise ValueError(f"aggregator {aggregator} is not supported")
+    blocking_mean = calculate_mean_blocking(strata_gts, strata_count_gts, blocking_strata, aggregator, blocking_population_size)
     
     total_population_size = sum(strata_population)
 
@@ -248,6 +233,25 @@ def calculate_mean_for_strata(strata_population: List[int], strata_sample_sizes:
         blocking_mean * blocking_population_size / total_population_size
 
     return mean
+
+def calculate_mean_blocking(strata_gts, strata_count_gts, blocking_strata, aggregator, blocking_population_size):
+    blocking_total_count = 0
+    blocking_total_sum = .0
+    for i in blocking_strata:
+        blocking_total_count += strata_count_gts[i]
+        blocking_total_sum += strata_gts[i]
+    if aggregator == "count":
+        blocking_mean = blocking_total_count / blocking_population_size
+        logging.debug(f"blocking count mean: {blocking_mean}, blocking total count: {blocking_total_count}")
+    elif aggregator == "sum":
+        blocking_mean = blocking_total_sum / blocking_population_size
+        logging.debug(f"blocking sum mean: {blocking_mean}, blocking total sum: {blocking_total_sum}")
+    elif aggregator == "avg":
+        blocking_mean = blocking_total_sum / blocking_total_count
+        logging.debug(f"blocking avg mean: {blocking_mean}")
+    else:
+        raise ValueError(f"aggregator {aggregator} is not supported")
+    return blocking_mean
 
 
 def run(config: Config):
@@ -273,6 +277,9 @@ def run(config: Config):
     # get proxy
     proxy_scores = get_proxy_score(config, dataset)
     proxy_rank = get_proxy_rank(config, dataset, proxy_scores)
+    logging.debug("finish proxy loading")
+    proxy_sum = proxy_scores.sum()
+    logging.debug(f"sum of proxy scores {proxy_sum}")
 
     # divide population into strata
     sample_size = int((1-config.max_blocking_ratio) * config.oracle_budget)
@@ -281,11 +288,11 @@ def run(config: Config):
     # allocate sample size and strata size
     # 1. first split the population into two parts: sampling & blocking
     strata_population = [proxy_rank[strata[0][0]:strata[0][1]]]
-    strata_proxy_scores = [proxy_scores[strata_population[0]]]
-    strata_sample_sizes = [int(sum(strata_proxy_scores[0]) / sum(proxy_scores) * sample_size)]
+    # strata_proxy_scores = [proxy_scores[strata_population[0]]]
+    strata_sample_sizes = [int(proxy_scores[strata_population[0]].sum() / proxy_scores.sum() * sample_size)]
     sample_size_remaining = sample_size - strata_sample_sizes[0]
-    # 2. get the number of strata by making sure each strata have at least 500 samples
-    num_strata = max(int(sample_size_remaining / 500), 1)
+    # 2. get the number of strata by making sure each strata have at least 1000 samples
+    num_strata = max(int(sample_size_remaining / 1000), 1)
     blocking_stratum_size = int(blocking_size_upperbound / num_strata)
     for i in range(num_strata):
         if i != num_strata - 1:
@@ -293,8 +300,9 @@ def run(config: Config):
         else:
             strata.append([strata[i][1], int(proxy_rank.shape[0])])
         strata_population.append(proxy_rank[strata[i+1][0]:strata[i+1][1]])
-        strata_proxy_scores.append(proxy_scores[strata_population[i+1]])
-        strata_sample_sizes.append(max(int(sum(strata_proxy_scores[i+1]) / sum(proxy_scores) * sample_size), 1))
+        # strata_proxy_scores.append(proxy_scores[strata_population[i+1]])
+        # strata_sample_sizes.append(max(int(sum(strata_proxy_scores[i+1]) / proxy_sum * sample_size), 1))
+        strata_sample_sizes.append(max(1, int(proxy_scores[strata_population[i+1]].sum() / proxy_sum * sample_size)))
     logging.debug(f"{num_strata + 1} strata sample sizes: {strata_sample_sizes}")
 
     # IS for each stratum
@@ -306,7 +314,7 @@ def run(config: Config):
     strata_avg_vars = []
     cache_ids = set()
     for i, (stratum_begin, stratum_end) in enumerate(strata):
-        stratum_proxy_scores = strata_proxy_scores[i]
+        stratum_proxy_scores = proxy_scores[strata_population[i]]
         stratum_proxy_weights = normalize(stratum_proxy_scores)
         stratum_sample = weighted_sample_pd(stratum_proxy_scores, strata_sample_sizes[i], replace=True)
         stratum_sample_ids = strata_population[i][stratum_sample]
@@ -325,15 +333,22 @@ def run(config: Config):
             else:
                 stratum_sample_results.append(0)
                 stratum_sample_count_results.append(0)
-        
         stratum_sample_results = np.array(stratum_sample_results)
         stratum_sample_count_results = np.array(stratum_sample_count_results)
         stratum_sample_avg_results = np.array(stratum_sample_avg_results)
-        strata_means.append(np.mean(stratum_sample_results))
-        strata_vars.append(np.var(stratum_sample_results, ddof=1))
-        strata_count_means.append(np.mean(stratum_sample_count_results))
-        strata_count_vars.append(np.var(stratum_sample_count_results, ddof=1))
-        if len(stratum_sample_avg_results) <= 0:
+        
+        if sum(stratum_sample_count_results) > 0:
+            strata_means.append(np.mean(stratum_sample_results))
+            strata_vars.append(np.var(stratum_sample_results, ddof=1))
+            strata_count_means.append(np.mean(stratum_sample_count_results))
+            strata_count_vars.append(np.var(stratum_sample_count_results, ddof=1))
+        else:
+            strata_means.append(np.nan)
+            strata_vars.append(np.nan)
+            strata_count_means.append(np.nan)
+            strata_count_vars.append(np.nan)
+
+        if len(stratum_sample_avg_results) <= 1:
             strata_avg_means.append(np.nan)
             strata_avg_vars.append(np.nan)
         else:
@@ -347,19 +362,8 @@ def run(config: Config):
     logging.debug(f"strata avg means: {strata_avg_means}")
     logging.debug(f"strata avg vars: {strata_avg_vars}")
 
-    # calculate the optimal allocation
-    strata_population_size = [len(stratum_population) for stratum_population in strata_population]
-    count_sampling_strata, count_blocking_strata = empirical_best_blocking_allocation(strata_population_size, strata_sample_sizes, strata_count_vars, objective="MSE")
-    sum_sampling_strata, sum_blocking_strata = empirical_best_blocking_allocation(strata_population_size, strata_sample_sizes, strata_vars, objective="MSE")
-    avg_sampling_strata, avg_blocking_strat = empirical_best_blocking_allocation(strata_population_size, strata_sample_sizes, strata_avg_vars, objective="MSE")
-
-    logging.debug(f"count sampling strata: {count_sampling_strata}, count blocking strata: {count_blocking_strata}")
-    logging.debug(f"sum sampling strata: {sum_sampling_strata}, sum blocking strata: {sum_blocking_strata}")
-    logging.debug(f"avg sampling strata: {avg_sampling_strata}, avg blocking strata: {avg_blocking_strat}")
-
     strata_gt = [-1.]
     strata_count_gt = [-1.]
-    strata_ids = [[-1]]
     for i in range(1, len(strata)):
         stratum_population = strata_population[i]
         stratum_ids = np.array(np.unravel_index(stratum_population, dataset_sizes)).T
@@ -370,16 +374,41 @@ def run(config: Config):
                 stratum_gt += dataset.get_statistics(stratum_id)
                 stratum_count_gt += 1
         strata_gt.append(stratum_gt)
-        strata_ids.append(stratum_population.tolist())
         strata_count_gt.append(stratum_count_gt)
 
-    count_mean = calculate_mean_for_strata(strata_population_size, strata_sample_sizes, strata_means, strata_gt, strata_count_gt, count_sampling_strata, count_blocking_strata, aggregator="count")
-    sum_mean = calculate_mean_for_strata(strata_population_size, strata_sample_sizes, strata_means, strata_gt, strata_count_gt, sum_sampling_strata, sum_blocking_strata, aggregator="sum")
-    avg_mean = calculate_mean_for_strata(strata_population_size, strata_sample_sizes, strata_means, strata_gt, strata_count_gt, avg_sampling_strata, avg_blocking_strat, aggregator="avg")
+    # calculate the optimal allocation
+    strata_population_size = [len(stratum_population) for stratum_population in strata_population]
+    if np.isnan(strata_avg_means[0]):
+        blocking_strata = list(range(1, len(strata)))
+        logging.debug(f"count sampling strata: [0], count blocking strata: {blocking_strata}")
+        logging.debug(f"sum sampling strata: [0], sum blocking strata: {blocking_strata}")
+        logging.debug(f"avg sampling strata: [0], avg blocking strata: {blocking_strata}")
 
-    logging.debug(f"count mean: {count_mean}")
-    logging.debug(f"sum mean: {sum_mean}")
-    logging.debug(f"avg mean: {avg_mean}")
+        blocking_population_size = sum([strata_population_size[i] for i in range(1, len(strata))])
+        count_mean = calculate_mean_blocking(strata_gt, strata_count_gt, blocking_strata, "count", blocking_population_size)
+        sum_mean = calculate_mean_blocking(strata_gt, strata_count_gt, blocking_strata, "sum", blocking_population_size)
+        avg_mean = calculate_mean_blocking(strata_gt, strata_count_gt, blocking_strata, "avg", blocking_population_size)
+
+        logging.debug(f"count mean {count_mean}")
+        logging.debug(f"sum mean {sum_mean}")
+        logging.debug(f"avg mean {avg_mean}")
+
+    else:
+        count_sampling_strata, count_blocking_strata = empirical_best_blocking_allocation(strata_population_size, strata_sample_sizes, strata_count_vars, objective="MSE")
+        sum_sampling_strata, sum_blocking_strata = empirical_best_blocking_allocation(strata_population_size, strata_sample_sizes, strata_vars, objective="MSE")
+        avg_sampling_strata, avg_blocking_strat = empirical_best_blocking_allocation(strata_population_size, strata_sample_sizes, strata_avg_vars, objective="MSE")
+
+        logging.debug(f"count sampling strata: {count_sampling_strata}, count blocking strata: {count_blocking_strata}")
+        logging.debug(f"sum sampling strata: {sum_sampling_strata}, sum blocking strata: {sum_blocking_strata}")
+        logging.debug(f"avg sampling strata: {avg_sampling_strata}, avg blocking strata: {avg_blocking_strat}")
+
+        count_mean = calculate_mean_for_strata(strata_population_size, strata_sample_sizes, strata_count_means, strata_gt, strata_count_gt, count_sampling_strata, count_blocking_strata, aggregator="count")
+        sum_mean = calculate_mean_for_strata(strata_population_size, strata_sample_sizes, strata_means, strata_gt, strata_count_gt, sum_sampling_strata, sum_blocking_strata, aggregator="sum")
+        avg_mean = calculate_mean_for_strata(strata_population_size, strata_sample_sizes, strata_avg_means, strata_gt, strata_count_gt, avg_sampling_strata, avg_blocking_strat, aggregator="avg")
+
+        logging.debug(f"count mean {count_mean}")
+        logging.debug(f"sum mean {sum_mean}")
+        logging.debug(f"avg mean {avg_mean}")
 
     # combine the statistics
     count_result = count_mean * sum(strata_population_size)

@@ -22,7 +22,7 @@ def run(config: Config):
         run_straight_blocking(config)
     elif config.task == "fb":
         run_fix_blocking_sampling(config)
-    elif config.task == "est":
+    elif config.task == "mse":
         run_est(config)
     else:
         raise ValueError(f"Unknown task: {config.task}")
