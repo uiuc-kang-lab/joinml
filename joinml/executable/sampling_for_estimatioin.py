@@ -9,7 +9,6 @@ from joinml.utils import get_ci_bootstrap, weighted_sample_pd
 import os
 import logging
 import numpy as np
-from scipy import stats
 from typing import Tuple, List
 
 def bootstrap_blocking_sampling(config, dataset, oracle, dataset_sizes, 
@@ -166,6 +165,90 @@ def bootstrap_blocking_sampling(config, dataset, oracle, dataset_sizes,
     # calculate the total cost
     logging.info(f"total cost {len(cache_ids)}")
 
+def empirical_best_blocking_allocation(strata_population: List[int], strata_sample_sizes: List[int],
+                                       strata_sample_variance: List[float], objective: str="CI") -> Tuple[List[int], List[int]]:
+    # blocking for all the non-positive data
+    strata_to_decide = []
+    for i in range(len(strata_population)):
+        if not np.isnan(strata_sample_variance[i]):
+            strata_to_decide.append(i)
+    
+    # calculate the total variance of the sub population
+    total_variances = []
+    for i in range(1, len(strata_to_decide)):
+        variance = 0
+        total_population = sum([len(strata_population[j]) for j in strata_to_decide[:i+1]])
+        for j in strata_to_decide[:i+1]:
+            variance += (strata_population[j] / total_population)**2 * \
+                (strata_population[j] - strata_sample_sizes[j]) / strata_population[j] * \
+                strata_sample_variance[j] / strata_sample_sizes[j]
+        total_variances.append(variance)
+    
+    logging.debug(f"total variances: {total_variances}")
+    
+    # calculate the utility based on the objective
+    utility = []
+    if objective == "CI":
+        for i in range(1, len(strata_to_decide)):
+            total_sample_size = sum([strata_sample_sizes[j] for j in strata_to_decide[:i+1]])
+            utility.append(total_variances[i-1] / total_sample_size)
+    elif objective == "MSE":
+        for i in range(1, len(strata_to_decide)):
+            total_nonblocking_ratio = sum([strata_population[j] for j in strata_to_decide[:i+1]]) / sum(strata_population)
+            utility.append(total_variances[i-1] * (total_nonblocking_ratio)**2)
+    logging.debug(f"utility: {utility}")
+    min_utility = np.min(utility)
+    optimal_allocation = 1 + [i for i in range(len(utility)) if utility[i] == min_utility][-1]
+
+    logging.debug(f"optimal allocation {optimal_allocation} utility {min_utility}")
+    strata_for_sampling = strata_to_decide[:optimal_allocation]
+    strata_for_blocking = []
+    for i in range(len(strata_population)):
+        if i not in strata_for_sampling:
+            strata_for_blocking.append(i)
+    return strata_for_sampling, strata_for_blocking
+
+def calculate_mean_for_strata(strata_population: List[int], strata_sample_sizes: List[int], 
+                              strata_sample_means: List[float], strata_gts: List[float|int],
+                              strata_count_gts: List[float|int],
+                              sampling_strata: List[int], blocking_strata: List[int],
+                              aggregator: str="count") -> float:
+    # make sure the strata are all allocated in either sampling or blocking
+    assert len(set(sampling_strata).intersection(set(blocking_strata))) == 0
+    assert len(sampling_strata) + len(blocking_strata) == len(strata_population)
+
+    sampling_population_size = sum([strata_population[i] for i in sampling_strata])
+    sampling_mean = 0
+    for i in sampling_strata:
+        sampling_mean += strata_sample_means[i] * strata_population[i] / sampling_population_size
+    
+    logging.debug(f"sampling mean: {sampling_mean}")
+
+    blocking_population_size = sum([strata_population[i] for i in blocking_strata])
+    blocking_total_count = 0
+    blocking_total_sum = .0
+    for i in blocking_strata:
+        blocking_total_count += strata_count_gts[i]
+        blocking_total_sum += strata_gts[i]
+    if aggregator == "count":
+        blocking_mean = blocking_total_count / blocking_population_size
+        logging.debug(f"blocking count mean: {blocking_total_count}, blocking total count: {blocking_total_count}")
+    elif aggregator == "sum":
+        blocking_mean = blocking_total_sum / blocking_population_size
+        logging.debug(f"blocking sum mean: {blocking_total_sum}, blocking total sum: {blocking_total_sum}")
+    elif aggregator == "avg":
+        blocking_mean = blocking_total_sum / blocking_total_count
+        logging.debug(f"blocking avg mean: {blocking_total_sum}")
+    else:
+        raise ValueError(f"aggregator {aggregator} is not supported")
+    
+    total_population_size = sum(strata_population)
+
+    mean = sampling_mean * sampling_population_size / total_population_size + \
+        blocking_mean * blocking_population_size / total_population_size
+
+    return mean
+
 
 def run(config: Config):
     set_up_logging(config.log_path, config.log_level)
@@ -219,8 +302,8 @@ def run(config: Config):
     strata_vars = []
     strata_count_means = []
     strata_count_vars = []
-    # strata_avg_means = []
-    # strata_avg_vars = []
+    strata_avg_means = []
+    strata_avg_vars = []
     cache_ids = set()
     for i, (stratum_begin, stratum_end) in enumerate(strata):
         stratum_proxy_scores = strata_proxy_scores[i]
@@ -250,11 +333,32 @@ def run(config: Config):
         strata_vars.append(np.var(stratum_sample_results, ddof=1))
         strata_count_means.append(np.mean(stratum_sample_count_results))
         strata_count_vars.append(np.var(stratum_sample_count_results, ddof=1))
-        # strata_avg_means.append(np.mean(stratum_sample_avg_results))
-        # strata_avg_vars.append(np.var(stratum_sample_avg_results, ddof=1))
-    
-    strata_gt = [-1]
-    strata_count_gt = [-1]
+        if len(stratum_sample_avg_results) <= 0:
+            strata_avg_means.append(np.nan)
+            strata_avg_vars.append(np.nan)
+        else:
+            strata_avg_means.append(np.mean(stratum_sample_avg_results))
+            strata_avg_vars.append(np.var(stratum_sample_avg_results, ddof=1))
+
+    logging.debug(f"strata means: {strata_means}")
+    logging.debug(f"strata vars: {strata_vars}")
+    logging.debug(f"strata count means: {strata_count_means}")
+    logging.debug(f"strata count vars: {strata_count_vars}")
+    logging.debug(f"strata avg means: {strata_avg_means}")
+    logging.debug(f"strata avg vars: {strata_avg_vars}")
+
+    # calculate the optimal allocation
+    strata_population_size = [len(stratum_population) for stratum_population in strata_population]
+    count_sampling_strata, count_blocking_strata = empirical_best_blocking_allocation(strata_population_size, strata_sample_sizes, strata_count_vars, objective="MSE")
+    sum_sampling_strata, sum_blocking_strata = empirical_best_blocking_allocation(strata_population_size, strata_sample_sizes, strata_vars, objective="MSE")
+    avg_sampling_strata, avg_blocking_strat = empirical_best_blocking_allocation(strata_population_size, strata_sample_sizes, strata_avg_vars, objective="MSE")
+
+    logging.debug(f"count sampling strata: {count_sampling_strata}, count blocking strata: {count_blocking_strata}")
+    logging.debug(f"sum sampling strata: {sum_sampling_strata}, sum blocking strata: {sum_blocking_strata}")
+    logging.debug(f"avg sampling strata: {avg_sampling_strata}, avg blocking strata: {avg_blocking_strat}")
+
+    strata_gt = [-1.]
+    strata_count_gt = [-1.]
     strata_ids = [[-1]]
     for i in range(1, len(strata)):
         stratum_population = strata_population[i]
@@ -266,87 +370,22 @@ def run(config: Config):
                 stratum_gt += dataset.get_statistics(stratum_id)
                 stratum_count_gt += 1
         strata_gt.append(stratum_gt)
-        strata_ids.append(stratum_population)
+        strata_ids.append(stratum_population.tolist())
         strata_count_gt.append(stratum_count_gt)
 
-    # calculate the subpopulation variance
-    subpopulation_utility = []
-    subpopulation_count_utility = []
-    # subpopulation_avg_utility = []
-    for i in range(1, num_strata):
-        all_strata_sizes = sum([len(stratum_population) for stratum_population in strata_population[:i+1]])
-        variance = 0
-        count_variance = 0
-        # avg_variance = 0
-        subpopulation_size = 0
-        all_sample_size = 0
-        for j in range(i+1):
-            stratum_population_size = len(strata_population[j])
-            subpopulation_size += stratum_population_size
-            all_sample_size += strata_sample_sizes[j]
-            stratum_variance = \
-                (stratum_population_size / all_strata_sizes)**2 * \
-                (stratum_population_size - strata_sample_sizes[j]) / stratum_population_size * \
-                strata_vars[j] / strata_sample_sizes[j]
-            stratum_count_variance = \
-                (stratum_population_size / all_strata_sizes)**2 * \
-                (stratum_population_size - strata_sample_sizes[j]) / stratum_population_size * \
-                strata_count_vars[j] / strata_sample_sizes[i]
-            # stratum_avg_variance = \
-            #     (stratum_population_size / all_strata_sizes)**2 * \
-            #     (stratum_population_size - strata_sample_sizes[j]) / stratum_population_size * \
-            #     strata_avg_vars[j] / strata_sample_sizes[i]
-            variance += stratum_variance
-            count_variance += stratum_count_variance
-            # avg_variance += stratum_avg_variance
-        subpopulation_utility.append(variance / all_sample_size)
-        subpopulation_count_utility.append(count_variance / all_sample_size)
-        # subpopulation_avg_utility.append(avg_variance / all_sample_size)
+    count_mean = calculate_mean_for_strata(strata_population_size, strata_sample_sizes, strata_means, strata_gt, strata_count_gt, count_sampling_strata, count_blocking_strata, aggregator="count")
+    sum_mean = calculate_mean_for_strata(strata_population_size, strata_sample_sizes, strata_means, strata_gt, strata_count_gt, sum_sampling_strata, sum_blocking_strata, aggregator="sum")
+    avg_mean = calculate_mean_for_strata(strata_population_size, strata_sample_sizes, strata_means, strata_gt, strata_count_gt, avg_sampling_strata, avg_blocking_strat, aggregator="avg")
 
-    subpopulation_utility = np.array(subpopulation_utility)
-    subpopulation_count_utility = np.array(subpopulation_count_utility)
-
-    # get the best allocation
-    min_var = np.min(subpopulation_utility)
-    min_count_var = np.min(subpopulation_count_utility)
-    if np.isnan(min_var):
-        optimal_allocation = len(subpopulation_utility)
-    else:
-        optimal_allocation = 1 + [i for i in range(subpopulation_utility.shape[0]) if subpopulation_utility[i] == min_var][-1]
-    
-    if np.isnan(min_count_var):
-        optimal_count_allocation = len(subpopulation_count_utility)
-    else:
-        optimal_count_allocation = 1 + [i for i in range(subpopulation_count_utility.shape[0]) if subpopulation_count_utility[i] == min_count_var][-1]
-    
-    # calculate statistics for sampling
-    sampling_sum_mean = 0
-    sampling_population_size = sum([len(stratum_population) for stratum_population in strata_population[:optimal_allocation+1]])
-    for i in range(optimal_allocation+1):
-        sum_mean = strata_means[i] * len(strata_population[i]) / sampling_population_size
-        sampling_sum_mean += sum_mean
-    sampling_sum = sampling_sum_mean * sampling_population_size
-
-    sampling_count_mean = 0
-    sampling_population_size_count = sum([len(stratum_population) for stratum_population in strata_population[:optimal_count_allocation+1]])
-    for i in range(optimal_count_allocation+1):
-        count_mean = strata_count_means[i] * len(strata_population[i]) / sampling_population_size_count
-        sampling_count_mean += count_mean
-    sampling_count = sampling_count_mean * sampling_population_size_count
-
-    # calculate statistics for blocking
-    blocking_sum = 0
-    for i in range(optimal_allocation+1, len(strata)):
-        blocking_sum += strata_gt[i]
-    blocking_count = 0
-    for i in range(optimal_count_allocation+1, len(strata)):
-        blocking_count += strata_count_gt[i]
-    logging.debug(f"sampling count: {sampling_count}, sampling sum: {sampling_sum} blocking count: {blocking_count}, blocking sum: {blocking_sum}")
+    logging.debug(f"count mean: {count_mean}")
+    logging.debug(f"sum mean: {sum_mean}")
+    logging.debug(f"avg mean: {avg_mean}")
 
     # combine the statistics
-    count_result = sampling_count + blocking_count
-    sum_result = sampling_sum + blocking_sum
-    avg_result = sum_result / count_result
+    count_result = count_mean * sum(strata_population_size)
+    sum_result = sum_mean * sum(strata_population_size)
+    avg_result = avg_mean
+
     count_est = Estimates(config.oracle_budget, count_gt, count_result, 0, 0)
     sum_est = Estimates(config.oracle_budget, sum_gt, sum_result, 0, 0)
     avg_est = Estimates(config.oracle_budget, avg_gt, avg_result, 0, 0)
