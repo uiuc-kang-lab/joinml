@@ -3,7 +3,7 @@ import json
 
 
 class Estimates:
-    def __init__(self, cost: int, gt: float, est: float, lb: float, ub: float) -> None:
+    def __init__(self, cost: float, gt: float, est: float, lb: float, ub: float) -> None:
         self.gt = gt
         self.est = est
         self.lb = lb
@@ -21,7 +21,7 @@ class Estimates:
         output_file = output_file.split(".")[0] + surfix + ".jsonl"
         with open(f"{output_file}", "a+") as f:
             json.dump({
-                "budget": int(self.cost),
+                "budget": float(self.cost),
                 "est": float(self.est),
                 "lb": float(self.lb),
                 "ub": float(self.ub),

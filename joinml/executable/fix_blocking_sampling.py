@@ -4,7 +4,7 @@ from joinml.oracle import Oracle
 from joinml.config import Config
 from joinml.utils import set_up_logging, normalize
 from joinml.estimates import Estimates
-from joinml.utils import get_ci_bootstrap
+from joinml.utils import get_ci_bootstrap, get_ci_gaussian
 
 import os
 import logging
@@ -46,7 +46,7 @@ def run(config: Config):
     proxy_scores = normalize(proxy_scores, config.proxy_normalizing_style)
     sample = np.random.choice(len(sampling_data), size=sampling_size, replace=True, p=proxy_scores)
     sample_ids = sampling_data[sample]
-    sample_ids = np.array(np.unravel_index(sample, dataset_sizes)).T
+    sample_ids = np.array(np.unravel_index(sample_ids, dataset_sizes)).T
     sampling_results = []
     sampling_count_results = []
     sampling_avg_results = []
@@ -62,11 +62,16 @@ def run(config: Config):
     sampling_results = np.array(sampling_results)
     sampling_count_results = np.array(sampling_count_results)
 
+    ci_count_lower, ci_count_upper = get_ci_gaussian(sampling_count_results, config.confidence_level)
+    ci_sum_lower, ci_sum_upper = get_ci_gaussian(sampling_results, config.confidence_level)
+    ci_avg_lower, ci_avg_upper = get_ci_gaussian(sampling_avg_results, config.confidence_level)
+
     # run blocking
     blocking_results = []
     blocking_count_results = []
     blocking_avg_results = []
-    for b_id in blocking_data:
+    blocking_data_ids = np.array(np.unravel_index(blocking_data, dataset_sizes)).T
+    for b_id in blocking_data_ids:
         if oracle.query(b_id):
             statistics = dataset.get_statistics(b_id)
             blocking_results.append(statistics)
@@ -75,38 +80,25 @@ def run(config: Config):
         else:
             blocking_results.append(0)
             blocking_count_results.append(0)
+    
+    ci_count_lower = ci_count_lower * len(sampling_data) + np.sum(blocking_count_results)
+    ci_count_upper = ci_count_upper * len(sampling_data) + np.sum(blocking_count_results)
+    ci_sum_lower = ci_sum_lower * len(sampling_data) + np.sum(blocking_results)
+    ci_sum_upper = ci_sum_upper * len(sampling_data) + np.sum(blocking_results)
+    ci_avg_lower = ci_avg_lower * len(sampling_data) / len(proxy_rank) + \
+        np.mean(blocking_avg_results).item() * (1 - len(sampling_data) / len(proxy_rank))
+    ci_avg_upper = ci_avg_upper * len(sampling_data) / len(proxy_rank) + \
+        np.mean(blocking_avg_results).item() * (1 - len(sampling_data) / len(proxy_rank))
 
-    count_estimate = np.mean(sampling_count_results) * len(sampling_data) + np.sum(blocking_count_results)
-    sum_estimate = np.mean(sampling_results) * len(sampling_data) + np.sum(blocking_results)
+    logging.debug(f"sampling results {np.mean(sampling_count_results).item() * len(sampling_data)}, blocking results {np.sum(blocking_count_results)}")
+
+    count_estimate = np.mean(sampling_count_results).item() * len(sampling_data) + np.sum(blocking_count_results)
+    sum_estimate = np.mean(sampling_results).item() * len(sampling_data) + np.sum(blocking_results)
     avg_estimate = (np.sum(sampling_avg_results) + np.sum(blocking_avg_results)) / (len(sampling_data) + len(blocking_avg_results))
 
-    # run bootstrapping for the CI
-    bootstrapping_count = []
-    bootstrapping_sum = []
-    bootstrapping_avg = []
-    for trian in range(config.bootstrap_trials):
-        # resample from the sampling data
-        resample = np.random.choice(len(sampling_count_results), size=sampling_size, replace=True)
-        resample_results = sampling_results[resample]
-        resample_count_results = sampling_count_results[resample]
-        resample_count = np.mean(resample_count_results) * len(sampling_data) + np.sum(blocking_count_results)
-        resample_sum = np.mean(resample_results) * len(sampling_data) + np.sum(blocking_results)
-        resample_avg = resample_sum / resample_count
-        bootstrapping_count.append(resample_count)
-        bootstrapping_sum.append(resample_sum)
-        bootstrapping_avg.append(resample_avg)
-    bootstrapping_count = np.array(bootstrapping_count)
-    bootstrapping_sum = np.array(bootstrapping_sum)
-    bootstrapping_avg = np.array(bootstrapping_avg)
-
-    # calculate CI
-    ci_count_lower, ci_count_upper = get_ci_bootstrap(bootstrapping_count, config.confidence_level)
-    ci_sum_lower, ci_sum_upper = get_ci_bootstrap(bootstrapping_sum, config.confidence_level)
-    ci_avg_lower, ci_sum_upper = get_ci_bootstrap(bootstrapping_avg, config.confidence_level)
-
-    count_est = Estimates(config.oracle_budget, count_gt, count_estimate, ci_count_lower, ci_count_upper)
-    sum_est = Estimates(config.oracle_budget, sum_gt, sum_estimate, ci_sum_lower, ci_sum_upper)
-    avg_est = Estimates(config.oracle_budget, avg_gt, avg_estimate, ci_avg_lower, ci_sum_upper)
+    count_est = Estimates(config.blocking_ratio, count_gt, count_estimate, ci_count_lower, ci_count_upper)
+    sum_est = Estimates(config.blocking_ratio, sum_gt, sum_estimate, ci_sum_lower, ci_sum_upper)
+    avg_est = Estimates(config.blocking_ratio, avg_gt, avg_estimate, ci_avg_lower, ci_sum_upper)
 
     count_est.log()
     sum_est.log()
