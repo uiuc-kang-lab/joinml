@@ -4,7 +4,7 @@ from joinml.oracle import Oracle
 from joinml.config import Config
 from joinml.utils import set_up_logging, normalize, get_ci_gaussian, get_ci_bootstrap
 from joinml.estimates import Estimates
-from joinml.executable.blocking_sampling import get_non_positive_ci
+from joinml.executable.joinml_ci import get_non_positive_ci
 
 import os
 import logging

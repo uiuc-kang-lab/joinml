@@ -18,11 +18,12 @@ class Config:
     proxy_normalizing_style: str = "proportional" # [sqrt, proportional]
     oracle_budget: int = 1000000
     max_blocking_ratio: float = 0.2
-    num_strata: int = 11
-    bootstrap_trials: int = 10000 # [0, 10000] bis/(is/uniform avg) 10000, for others both works
+    bootstrap_trials: int = 1000 # [0, 10000] bis/(is/uniform avg) 10000, for others both works
     task: str = "bis" # [bis, is, uniform, recall]
     output_file: str = f"{dataset_name}.jsonl"
     log_level: str = "info" # [info, debug]
     parallelProxyCalculation: bool = True
     numProcessPerCPU = 1 #can be non integer
     blocking_ratio: float = 0.2 # only used for fix blocking sampling
+    internal_loop: int = 1 # for time efficiency of large datasets
+    need_ci: bool = False # if need confidence interval
