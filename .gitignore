@@ -13,3 +13,5 @@ data/wikidiverse*
 data/flickr30k*
 archive
 **/model_cache
+slurm-*.out
+run*.sh
