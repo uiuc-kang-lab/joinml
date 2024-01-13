@@ -5,10 +5,12 @@ from typing import List, Tuple, Any
 import pandas as pd
 from joinml.commons import dataset2modality
 from joinml.oracle import Oracle
+import os, json
 
 class JoinDataset:
     def __init__(self) -> None:
         self.tables = []
+        self.path = ""
 
     def get_sizes(self) -> Tuple[int, ...]:
         return tuple(len(table) for table in self.tables)
@@ -23,6 +25,12 @@ class JoinDataset:
         return 1, 1
 
     def get_gt(self, oracle: Oracle):
+        # load the cached groundtruth to save time
+        if os.path.exists(f"{self.path}/gt.json"):
+            with open(f"{self.path}/gt.json") as f:
+                gts = json.load(f)
+            return gts["count_gt"], gts["sum_gt"], gts["avg_gt"]
+
         dataset_sizes = self.get_sizes()
         count_gt = 0
         sum_gt = 0

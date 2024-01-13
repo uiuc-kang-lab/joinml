@@ -1,3 +1,6 @@
+import sys
+sys.path.append("/users/kaimeng2/join_ml")
+
 from joinml.run import run
 from joinml.config import Config
 import time
@@ -6,7 +9,7 @@ for oracle_budget in [1000000 * i for i in range(1, 11)]:
     job_id = int(time.time())
     config = Config(
         dataset_name="twitter",
-        proxy="all-MiniLM-L6-v2",
+        proxy="TF/IDF",
         is_self_join=True,
         log_path=f"logs/twitter-bis_{job_id}.log",
         device="cpu",

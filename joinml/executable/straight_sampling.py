@@ -4,6 +4,7 @@ from joinml.oracle import Oracle
 from joinml.config import Config
 from joinml.utils import set_up_logging, normalize, get_ci_gaussian, get_ci_bootstrap
 from joinml.estimates import Estimates
+from joinml.executable.joinml_ci import get_non_positive_ci
 
 import os
 import logging
@@ -40,11 +41,13 @@ def run(config: Config):
         sample_ids = np.array(np.unravel_index(sample, dataset_sizes)).T
         sample_results = []
         sample_count_results = []
+        sample_positive_results = []
         for s, sample_id in zip(sample, sample_ids):
             if oracle.query(sample_id):
                 stats = dataset.get_statistics(sample_id)
                 sample_results.append(stats / len(proxy_weights) / proxy_weights[s])
                 sample_count_results.append(1 / len(proxy_weights) / proxy_weights[s])
+                sample_positive_results.append(stats)
             else:
                 sample_results.append(0)
                 sample_count_results.append(0)
@@ -54,9 +57,11 @@ def run(config: Config):
         sample_ids = np.array(np.unravel_index(sample, dataset_sizes)).T
         sample_results = []
         sample_count_results = []
+        sample_positive_results = []
         for sample_id in sample_ids:
             if oracle.query(sample_id):
                 sample_results.append(dataset.get_statistics(sample_id))
+                sample_positive_results.append(dataset.get_statistics(sample_id))
                 sample_count_results.append(1)
             else:
                 sample_results.append(0)
@@ -64,9 +69,33 @@ def run(config: Config):
     
     else:
         raise NotImplementedError(f"Task {config.task} not implemented for straight sampling.")
-        
+
+    if sum(sample_results) == 0:
+        min_statistics, max_statistics = dataset.get_min_max_statistics()
+        count_lower_bound, count_upper_bound, sum_lower_bound, sum_upper_bound = \
+            get_non_positive_ci(max_statistics=max_statistics, confidence_level=config.confidence_level,
+                                n_positive_population_size=np.prod(dataset_sizes).item(), n_positive_sample_size=config.oracle_budget)
+        avg_lower_bound = min_statistics
+        avg_upper_bound = max_statistics
+        count_estimate = 0
+        sum_estimate = 0
+        avg_estimate = np.nan
+        count_est = Estimates(config.oracle_budget, count_gt, count_estimate, count_lower_bound, count_upper_bound)
+        sum_est = Estimates(config.oracle_budget, sum_gt, sum_estimate, sum_lower_bound, sum_upper_bound)
+        avg_est = Estimates(config.oracle_budget, avg_gt, avg_estimate, avg_lower_bound, avg_upper_bound)
+        count_est.log()
+        sum_est.log()
+        avg_est.log()
+        count_est.save(config.output_file, "_count")
+        sum_est.save(config.output_file, "_sum")
+        avg_est.save(config.output_file, "_avg")
+    else:
+        get_straight_sampling_CI(config, dataset_sizes, count_gt, sum_gt, avg_gt, sample_results, sample_count_results, sample_positive_results)
+
+def get_straight_sampling_CI(config, dataset_sizes, count_gt, sum_gt, avg_gt, sample_results, sample_count_results, sample_positive_results):
     sample_results = np.array(sample_results)
     sample_count_results = np.array(sample_count_results)
+    sample_positive_results = np.array(sample_positive_results)
     bootstrapping_results = {
         "count": [],
         "sum": []
@@ -90,6 +119,12 @@ def run(config: Config):
         count_est = Estimates(config.oracle_budget, count_gt, count_result, ci_lower, ci_upper)
         count_est.log()
         count_est.save(config.output_file, surfix="_count")
+        # calculate gaussian confidence interval for avg
+        ci_lower, ci_upper = get_ci_gaussian(sample_positive_results, config.confidence_level)
+        avg_result = np.mean(sample_positive_results).item()
+        avg_est = Estimates(config.oracle_budget, avg_gt, avg_result, ci_lower, ci_upper)
+        avg_est.log()
+        avg_est.save(config.output_file, surfix="_avg")
     else:
         m_sums = []
         m_counts = []

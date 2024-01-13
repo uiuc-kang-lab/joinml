@@ -15,3 +15,4 @@ archive
 **/model_cache
 slurm-*.out
 run*.sh
+.results
