@@ -4,7 +4,7 @@ from joinml.oracle import Oracle
 from joinml.config import Config
 from joinml.utils import set_up_logging, normalize, get_ci_gaussian, get_ci_bootstrap
 from joinml.estimates import Estimates
-from joinml.executable.joinml_ci import get_non_positive_ci
+from joinml.executable.joinml_dep2 import get_non_positive_ci
 
 import os
 import logging
@@ -32,12 +32,16 @@ def run(config: Config):
     if config.task == "is":
         # check cache for proxy rank
         proxy_score = get_proxy_score(config, dataset)
-        proxy_weights = normalize(proxy_score, style="sqrt")
+        proxy_weights = normalize(proxy_score)
+    else:
+        proxy_weights = None
 
-        # weighted sample
-        p = np.array(proxy_weights).astype(np.float64)
-        p /= np.sum(p)
-        sample = np.random.choice(len(proxy_weights), size=config.oracle_budget, p=p, replace=True)
+    for exp_id in range(config.internal_loop):
+        run_once(config, dataset, oracle, dataset_sizes, count_gt, sum_gt, avg_gt, proxy_weights)
+
+def run_once(config, dataset, oracle, dataset_sizes, count_gt, sum_gt, avg_gt, proxy_weights):
+    if config.task == "is":
+        sample = np.random.choice(len(proxy_weights), size=config.oracle_budget, p=proxy_weights, replace=True)
         sample_ids = np.array(np.unravel_index(sample, dataset_sizes)).T
         sample_results = []
         sample_count_results = []
@@ -70,7 +74,7 @@ def run(config: Config):
     else:
         raise NotImplementedError(f"Task {config.task} not implemented for straight sampling.")
 
-    if sum(sample_results) == 0:
+    if len(sample_positive_results) < 2:
         min_statistics, max_statistics = dataset.get_min_max_statistics()
         count_lower_bound, count_upper_bound, sum_lower_bound, sum_upper_bound = \
             get_non_positive_ci(max_statistics=max_statistics, confidence_level=config.confidence_level,
@@ -96,10 +100,6 @@ def get_straight_sampling_CI(config, dataset_sizes, count_gt, sum_gt, avg_gt, sa
     sample_results = np.array(sample_results)
     sample_count_results = np.array(sample_count_results)
     sample_positive_results = np.array(sample_positive_results)
-    bootstrapping_results = {
-        "count": [],
-        "sum": []
-    }
     if config.bootstrap_trials == 0:
         # calculate gaussian confidence interval for sum
         ci_lower, ci_upper = get_ci_gaussian(sample_results, config.confidence_level)
@@ -128,22 +128,24 @@ def get_straight_sampling_CI(config, dataset_sizes, count_gt, sum_gt, avg_gt, sa
     else:
         m_sums = []
         m_counts = []
-        avgs = []
+        m_avgs = []
         for trial in range(config.bootstrap_trials):
             # resample
             resample = np.random.choice(len(sample_results), size=len(sample_results), replace=True)
             resample_results = sample_results[resample]
             resample_count_results = sample_count_results[resample]
+            positive_resample = np.random.choice(len(sample_positive_results), size=len(sample_positive_results), replace=True)
+            resample_positive_results = sample_positive_results[positive_resample]
             m_sum = np.mean(resample_results).item()
             m_count = np.mean(resample_count_results).item()
-            avg = m_sum / m_count if m_count > 0 else 0
+            m_avg = np.mean(resample_positive_results).item()
             m_sums.append(m_sum)
             m_counts.append(m_count)
-            avgs.append(avg)
-            logging.debug(f"trial {trial} avg {avg} sum {m_sum} count {m_count}")
+            m_avgs.append(m_avg)
+            logging.debug(f"trial {trial} avg {m_avg} sum {m_sum} count {m_count}")
         m_sums = np.array(m_sums)
         m_counts = np.array(m_counts)
-        avg_results = np.array(avgs)
+        avg_results = np.array(m_avgs)
         sum_results = m_sums * np.prod(dataset_sizes)
         count_results = m_counts * np.prod(dataset_sizes)
         

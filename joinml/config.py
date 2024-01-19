@@ -27,3 +27,4 @@ class Config:
     blocking_ratio: float = 0.2 # only used for fix blocking sampling
     internal_loop: int = 1 # for time efficiency of large datasets
     need_ci: bool = False # if need confidence interval
+    aggregator: str = "count" # [count, sum, avg]

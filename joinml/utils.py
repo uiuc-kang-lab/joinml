@@ -111,11 +111,7 @@ def get_ci_ttest(data, confidence_level=0.95):
 
 def get_ci_bootstrap(trial_results, confidence_level=0.95):
     """Get the confidence interval of the data using bootstrap."""
-    n = len(trial_results)
-    upperbound_idx = n - int((1 - confidence_level) / 2 * n)
-    lowerbound_idx = int((1 - confidence_level) / 2 * n)
-    trial_results.sort()
-    return trial_results[lowerbound_idx], trial_results[upperbound_idx]
+    return np.percentile(trial_results, [(1 - confidence_level) / 2 * 100, (1 + confidence_level) / 2 * 100])
 
 def get_ci_wilson_score_interval(data, confidence_level=0.95):
     """Get the confidence interval of the data using Wilson score interval."""

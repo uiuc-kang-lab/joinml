@@ -1,7 +1,7 @@
 from joinml.run import run
 from joinml.config import Config
 import time
-for oracle_budget in [1000000 * i for i in range(1, 11)]:
+for oracle_budget in [1000000 * i for i in range(1, 6)]:
     job_id = int(time.time())
     config = Config(
         seed=job_id,
