@@ -18,7 +18,6 @@ config = Config(
     bootstrap_trials=1000,
     log_level="debug",
     output_file="quora-joinml.jsonl",
-    need_ci=True,
     internal_loop=100,
     aggregator="count"
 )
