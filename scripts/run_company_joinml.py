@@ -9,16 +9,18 @@ config = Config(
     dataset_name="company",
     proxy="all-MiniLM-L6-v2",
     is_self_join=False,
-    log_path=f"logs/company-bis_{job_id}.log",
+    log_path=f"logs/company-joinml{job_id}.log",
     device="cpu",
-    cache_path=os.getenv("cache_path"),
+    cache_path="../.cache/joinml",
     proxy_score_cache=True,
-    task="est",
+    task="joinml",
     oracle_budget=2000000,
     max_blocking_ratio=0.2,
-    bootstrap_trials=10000,
+    bootstrap_trials=1000,
     log_level="debug",
-    output_file="company-bis.jsonl"
+    output_file="company-joinml.jsonl",
+    internal_loop=100,
+    aggregator="count"
 )
 
 run(config)
