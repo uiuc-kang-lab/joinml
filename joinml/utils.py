@@ -8,6 +8,7 @@ from numba import jit
 import logging
 import sys
 from scipy import stats
+from scipy.stats import norm, t
 import pandas as pd
 
 csv.field_size_limit(sys.maxsize)
@@ -109,9 +110,29 @@ def get_ci_ttest(data, confidence_level=0.95):
     confidence_interval = t.confidence_interval(confidence_level=confidence_level)
     return confidence_interval.low, confidence_interval.high
 
-def get_ci_bootstrap(trial_results, confidence_level=0.95):
+def get_ci_bootstrap(trial_results, estimation, ts, variance, confidence_levels: list=[0.95]):
     """Get the confidence interval of the data using bootstrap."""
-    return np.percentile(trial_results, [(1 - confidence_level) / 2 * 100, (1 + confidence_level) / 2 * 100])
+    p_lbs, p_ubs = [], []
+    e_lbs, e_ubs = [], []
+    t_lbs, t_ubs = [], []
+    for confidence_interval in confidence_levels:
+        ts_lb = np.percentile(ts, (1 - confidence_interval) / 2 * 100)
+        ts_ub = np.percentile(ts, (1 + confidence_interval) / 2 * 100)
+        
+        p_lb = np.percentile(trial_results, (1 - confidence_interval) / 2 * 100)
+        p_ub = np.percentile(trial_results, (1 + confidence_interval) / 2 * 100)
+        e_lb = estimation*2 - p_ub
+        e_ub = estimation*2 - p_lb
+        t_lb = estimation - ts_ub * np.sqrt(variance)
+        t_ub = estimation - ts_lb * np.sqrt(variance)
+
+        p_lbs.append(p_lb)
+        p_ubs.append(p_ub)
+        e_lbs.append(e_lb)
+        e_ubs.append(e_ub)
+        t_lbs.append(t_lb)
+        t_ubs.append(t_ub)
+    return p_lbs, p_ubs, e_lbs, e_ubs, t_lbs, t_ubs
 
 def get_ci_wilson_score_interval(data, confidence_level=0.95):
     """Get the confidence interval of the data using Wilson score interval."""
