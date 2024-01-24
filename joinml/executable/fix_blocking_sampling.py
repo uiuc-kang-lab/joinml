@@ -9,6 +9,20 @@ from joinml.utils import get_ci_bootstrap, get_ci_gaussian
 import os
 import logging
 import numpy as np
+from scipy import stats
+
+def get_non_positive_ci(max_statistics: float, 
+                        confidence_level: float, 
+                        n_positive_population_size: int, 
+                        n_positive_sample_size: int):
+    z = float(stats.norm.ppf(1 - (1 - confidence_level) / 2))
+    pr_upper_bound = 1 / (1+z**2/n_positive_sample_size) * (z**2/n_positive_sample_size)
+    n_positive_count_lower_bound = 0
+    n_positive_count_upper_bound = pr_upper_bound * n_positive_population_size
+    n_positive_sum_lower_bound = 0
+    n_positive_sum_upper_bound = n_positive_count_upper_bound * max_statistics
+    return n_positive_count_lower_bound, n_positive_count_upper_bound, n_positive_sum_lower_bound, n_positive_sum_upper_bound
+
 
 def run(config: Config):
     set_up_logging(config.log_path, config.log_level)
@@ -63,9 +77,19 @@ def run(config: Config):
         sampling_results = np.array(sampling_results)
         sampling_count_results = np.array(sampling_count_results)
 
-        ci_count_lower, ci_count_upper = get_ci_gaussian(sampling_count_results, config.confidence_level)
-        ci_sum_lower, ci_sum_upper = get_ci_gaussian(sampling_results, config.confidence_level)
-        ci_avg_lower, ci_avg_upper = get_ci_gaussian(sampling_avg_results, config.confidence_level)
+        if sum(sampling_count_results) == 0:
+            ci_count_lower, ci_count_upper, ci_sum_lower, ci_sum_upper = \
+                get_non_positive_ci(max_statistics, config.confidence_level, len(sampling_data), sampling_size)
+            ci_count_lower = ci_count_lower / len(sampling_data)
+            ci_count_upper = ci_count_upper / len(sampling_data)
+            ci_sum_lower = ci_sum_lower / len(sampling_data)
+            ci_sum_upper = ci_sum_upper / len(sampling_data)
+            ci_avg_lower = min_statistics
+            ci_avg_upper = max_statistics
+        else:
+            ci_count_lower, ci_count_upper = get_ci_gaussian(sampling_count_results, config.confidence_level)
+            ci_sum_lower, ci_sum_upper = get_ci_gaussian(sampling_results, config.confidence_level)
+            ci_avg_lower, ci_avg_upper = get_ci_gaussian(sampling_avg_results, config.confidence_level)
 
         # run blocking
         blocking_results = []
@@ -97,9 +121,9 @@ def run(config: Config):
         sum_estimate = np.mean(sampling_results).item() * len(sampling_data) + np.sum(blocking_results)
         avg_estimate = (np.sum(sampling_avg_results) + np.sum(blocking_avg_results)) / (len(sampling_avg_results) + len(blocking_avg_results))
 
-        count_est = Estimates(config.blocking_ratio, count_gt, count_estimate, ci_count_lower, ci_count_upper)
-        sum_est = Estimates(config.blocking_ratio, sum_gt, sum_estimate, ci_sum_lower, ci_sum_upper)
-        avg_est = Estimates(config.blocking_ratio, avg_gt, avg_estimate, ci_avg_lower, ci_avg_upper)
+        count_est = Estimates(config.blocking_ratio, count_gt, count_estimate, [ci_count_lower], [ci_count_upper])
+        sum_est = Estimates(config.blocking_ratio, sum_gt, sum_estimate, [ci_sum_lower], [ci_sum_upper])
+        avg_est = Estimates(config.blocking_ratio, avg_gt, avg_estimate, [ci_avg_lower], [ci_avg_upper])
 
         count_est.log()
         sum_est.log()

@@ -84,9 +84,9 @@ def run_once(config, dataset, oracle, dataset_sizes, count_gt, sum_gt, avg_gt, p
         count_estimate = 0
         sum_estimate = 0
         avg_estimate = np.nan
-        count_est = Estimates(config.oracle_budget, count_gt, count_estimate, count_lower_bound, count_upper_bound)
-        sum_est = Estimates(config.oracle_budget, sum_gt, sum_estimate, sum_lower_bound, sum_upper_bound)
-        avg_est = Estimates(config.oracle_budget, avg_gt, avg_estimate, avg_lower_bound, avg_upper_bound)
+        count_est = Estimates(config.oracle_budget, count_gt, count_estimate, [count_lower_bound], [count_upper_bound])
+        sum_est = Estimates(config.oracle_budget, sum_gt, sum_estimate, [sum_lower_bound], [sum_upper_bound])
+        avg_est = Estimates(config.oracle_budget, avg_gt, avg_estimate, [avg_lower_bound], [avg_upper_bound])
         count_est.log()
         sum_est.log()
         avg_est.log()

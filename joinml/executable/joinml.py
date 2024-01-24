@@ -93,6 +93,9 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
     if sum(strata_sample_count_results[0]) == 0:
         sampling_strata = [0]
         blocking_strata = [i for i in range(1, len(strata_population))]
+    elif config.dataset_name == "VeRi":
+        sampling_strata = [i for i in range(len(strata_population))]
+        blocking_strata = []
     else:
         sampling_strata, blocking_strata = empirical_best_blocking_allocation(strata_population_size, strata_sample_sizes, strata_count_mean_vars)
 
