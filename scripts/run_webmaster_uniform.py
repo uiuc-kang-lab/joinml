@@ -1,24 +1,24 @@
 from joinml.run import run
 from joinml.config import Config
 import time
-for oracle_budget in [20000 * i for i in range(3, 8)]:
+
+for oracle_budget in [4000000, 5000000, 6000000, 7000000, 8000000]:
     job_id = int(time.time())
     config = Config(
         seed=job_id,
-        dataset_name="city_human",
-        proxy="human_reid",
-        is_self_join=False,
-        log_path=f"logs/city_human-uniform_{job_id}.log",
+        dataset_name="webmasters",
+        proxy="all-MiniLM-L6-v2",
+        is_self_join=True,
+        log_path=f"logs/webmaster_uniform_{job_id}.log",
         device="cpu",
         cache_path="../.cache/joinml",
         proxy_score_cache=True,
         task="uniform",
         oracle_budget=oracle_budget,
+        log_level="DEBUG",
         max_blocking_ratio=0.2,
-        bootstrap_trials=10000,
-        log_level="info",
-        internal_loop=11,
-        output_file="city_human-uniform.jsonl"
+        output_file="webmaster-uniform.jsonl",
+        internal_loop=100
     )
 
     run(config)

@@ -1,7 +1,7 @@
 from joinml.run import run
 from joinml.config import Config
 import time
-for oracle_budget in [1000000 * i for i in range(1, 6)]:
+for oracle_budget in [6000000]:
     job_id = int(time.time())
     config = Config(
         seed=job_id,
@@ -14,11 +14,11 @@ for oracle_budget in [1000000 * i for i in range(1, 6)]:
         proxy_score_cache=True,
         task="is",
         oracle_budget=oracle_budget,
-        num_strata=11,
         max_blocking_ratio=0.2,
-        bootstrap_trials=10000,
+        bootstrap_trials=1000,
         log_level="info",
-        output_file="flickr30k-is.jsonl"
+        output_file="flickr30k-is.jsonl",
+        internal_loop=63,
     )
 
     run(config)

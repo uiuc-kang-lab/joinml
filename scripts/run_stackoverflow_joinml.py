@@ -2,7 +2,7 @@ from joinml.run import run
 from joinml.config import Config
 import time
 
-for oracle_budget in [1000000*i for i in range(1, 6)]:
+for oracle_budget in [7000000]:
     job_id = int(time.time())
     config = Config(
         seed=job_id,
@@ -18,7 +18,7 @@ for oracle_budget in [1000000*i for i in range(1, 6)]:
         max_blocking_ratio=0.2,
         bootstrap_trials=1000,
         log_level="debug",
-        output_file="stackoverflow-joinml.jsonl",
+        output_file="stackoverflow-joinml-7m.jsonl",
         internal_loop=100
     )
 

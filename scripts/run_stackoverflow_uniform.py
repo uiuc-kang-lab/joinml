@@ -14,7 +14,6 @@ for oracle_budget in [1000000 * i for i in range(5, 7)]:
         proxy_score_cache=True,
         task="uniform",
         oracle_budget=oracle_budget,
-        num_strata=6,
         max_blocking_ratio=0.2,
         bootstrap_trials=10000,
         log_level="DEBUG",
