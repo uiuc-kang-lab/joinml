@@ -2,9 +2,9 @@ dataset2modality = {
     "twitter": "text",
     "quora": "text",
     "company": "text",
-    "stackoverflow": "text",
+    "webmasters": "text",
     "city_human": "image",
-    "city_vehicle": "image",
+    "VeRi": "image",
     "flickr30k": "multimodal"
 }
 

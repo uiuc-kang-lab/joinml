@@ -4,7 +4,7 @@ from joinml.oracle import Oracle
 from joinml.config import Config
 from joinml.utils import set_up_logging, normalize
 from joinml.estimates import Estimates
-from joinml.utils import get_ci_bootstrap, weighted_sample_pd
+from joinml.utils import get_ci_bootstrap, weighted_sample_pd, calculate_ci_correction
 
 import os
 import logging
@@ -171,6 +171,13 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
     avg_var = get_avg_var(sample_size, count_var/population_size**2, count_estimation/population_size, sum_var/population_size**2, sum_estimation/population_size)
     logging.debug(f"count estimation {count_estimation} sum estimation {sum_estimation} avg estimation {avg_estimation}")
     logging.debug(f"count var {count_var} sum var {sum_var} avg var {avg_var}")
+
+    # correct bootstrapping ci
+    all_count_sample = np.concatenate(strata_sample_count_results)
+    all_sum_sample = np.concatenate(strata_sample_sum_results)
+    count_ci_correction = calculate_ci_correction(all_count_sample, population_size)
+    sum_ci_correction = calculate_ci_correction(all_sum_sample, population_size)
+    logging.debug(f"count ci correction {count_ci_correction} sum ci correction {sum_ci_correction}")
 
     # run bootstrapping
     count_bootstraps = []

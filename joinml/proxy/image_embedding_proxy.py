@@ -287,18 +287,21 @@ def _run_reid(model: nn.modules, image_path: List[str],
     ])
 
     images = []
-    for image_path in image_path:
-        image = Image.open(image_path)
+    s = 32
+    dev = torch.device('cuda')
+    torch.nn.functional.conv2d(torch.zeros(s, s, s, s, device=dev), torch.zeros(s, s, s, s, device=dev))
+    for image_p in image_path:
+        image = Image.open(image_p)
         image = transform(image)
         images.append(image)
     images = torch.stack(images)
-    images = images.to(device)
     model = model.to(device)
     model.eval()
     with torch.no_grad():
         features = []
         for i in tqdm(range(0, len(images), batch_size)):
             batch_images = images[i:i+batch_size]
+            batch_images = batch_images.to(device)
             batch_features = model(batch_images)
             features.append(batch_features)
         features = torch.cat(features, dim=0)
@@ -334,6 +337,7 @@ def _run_human_reid(model: nn.modules, image_path: List[str],
 class ImageEmbeddingProxy(Proxy):
     def __init__(self, config: Config):
         model_name = config.proxy
+        self.config = config
         if model_name == "infomin":
             self.model = _build_info_min_model(config.model_cache_path)
             self.run  = _run_infomin
@@ -349,10 +353,20 @@ class ImageEmbeddingProxy(Proxy):
         self.batch_size = config.batch_size
 
     def get_proxy_score_for_tables(self, table1: List[str], table2: List[str], is_self_join: bool=False) -> np.ndarray:
-        features1 = self.run(self.model, table1, device=self.device, batch_size=self.batch_size)
+        feature1_cache = f"{self.config.cache_path}/{self.config.dataset_name}_{self.config.proxy.split('/')[-1]}_0.npy"
+        feature2_cache = f"{self.config.cache_path}/{self.config.dataset_name}_{self.config.proxy.split('/')[-1]}_1.npy"
+        if not os.path.exists(feature1_cache):
+            features1 = self.run(self.model, table1, device=self.device, batch_size=self.batch_size)
+            np.save(feature1_cache, features1)
+        else:
+            features1 = np.load(feature1_cache)
         if is_self_join:
             features2 = features1
-        features2 = self.run(self.model, table2, device=self.device, batch_size=self.batch_size)
+        elif not os.path.exists(feature2_cache):
+            features2 = self.run(self.model, table2, device=self.device, batch_size=self.batch_size)
+            np.save(feature2_cache, features2)
+        else:
+            features2 = np.load(feature2_cache)
         return calculate_score_for_tables(features1, features2)
 
     def get_proxy_score_for_tuples(self, tuples: List[List[str]]) -> np.ndarray:

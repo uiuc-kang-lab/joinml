@@ -72,7 +72,7 @@ class TextDataset(JoinDataset):
             length1 = self.tables[0]["length"][id1]
             length2 = self.tables[0]["length"][id2]
             return length1 / length2
-        elif self.dataset == "stackoverflow":
+        elif self.dataset == "webmasters":
             answer_count = self.tables[0]["answer_count"][id1]
             return answer_count
         else:
@@ -85,7 +85,7 @@ class TextDataset(JoinDataset):
         elif self.dataset == "twitter":
             return self.tables[0]["length"].min() / self.tables[0]["length"].max(), \
                    self.tables[0]["length"].max() / self.tables[0]["length"].min()
-        elif self.dataset == "stackoverflow":
+        elif self.dataset == "webmasters":
             return self.tables[0]["answer_count"].min(), self.tables[0]["answer_count"].max()
         else:
             return 0, 1
@@ -100,7 +100,10 @@ class VideoDataset(JoinDataset):
         self.path = f"{config.data_path}/{config.dataset_name}"
         for i, table_file in enumerate(table_files):
             table_data = pd.read_csv(table_file)
-            table_data["img_path"] = table_data["id"].apply(lambda x: f"{self.path}/imgs/table{i}/{x}.jpg")
+            if self.dataset == "VeRi":
+                table_data["img_path"] = table_data["imageName"].apply(lambda x: f"{self.path}/imgs/table{i}/{x}")
+            else:
+                table_data["img_path"] = table_data["id"].apply(lambda x: f"{self.path}/imgs/table{i}/{x}.jpg")
             self.tables.append(table_data)
     
     def get_sizes(self) -> Tuple[int, ...]:
@@ -114,12 +117,24 @@ class VideoDataset(JoinDataset):
     
     def get_statistics(self, table_ids: List[int]) -> float:
         id1, id2 = table_ids
-        x_pos1 = self.tables[0]["x"][id1]
-        x_pos2 = self.tables[1]["x"][id2]
-        return abs(x_pos1 - x_pos2)
+        if self.dataset == "city_human":
+            x_pos1 = self.tables[0]["x"][id1]
+            x_pos2 = self.tables[1]["x"][id2]
+            return abs(x_pos1 - x_pos2)
+        elif self.dataset == "VeRi":
+            timestamp1 = self.tables[0]["timestamp"][id1]
+            timestamp2 = self.tables[1]["timestamp"][id2]
+            return abs(timestamp1 - timestamp2)
+        else:
+            return 1
 
     def get_min_max_statistics(self):
-        return self.tables[0]["x"].min() - self.tables[1]["x"].max(), self.tables[0]["x"].max() - self.tables[1]["x"].min()
+        if self.dataset == "city_human":
+            return self.tables[0]["x"].min() - self.tables[1]["x"].max(), self.tables[0]["x"].max() - self.tables[1]["x"].min()
+        elif self.dataset == "VeRi":
+            return self.tables[0]["timestamp"].min() - self.tables[1]["timestamp"].min(), self.tables[0]["timestamp"].max() - self.tables[1]["timestamp"].min()
+        else:
+            return 0, 1
 
 class MultiModalDataset(JoinDataset):
     def __init__(self, config: Config):

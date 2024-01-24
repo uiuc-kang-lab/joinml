@@ -134,6 +134,12 @@ def get_ci_bootstrap(trial_results, estimation, ts, variance, confidence_levels:
         t_ubs.append(t_ub)
     return p_lbs, p_ubs, e_lbs, e_ubs, t_lbs, t_ubs
 
+def get_ci_bootstrap_quantile(trial_results, confidence_level: float=0.95):
+    """Get the confidence interval of the data using bootstrap."""
+    p_lb = np.percentile(trial_results, (1 - confidence_level) / 2 * 100)
+    p_ub = np.percentile(trial_results, (1 + confidence_level) / 2 * 100)
+    return p_lb, p_ub
+
 def get_ci_wilson_score_interval(data, confidence_level=0.95):
     """Get the confidence interval of the data using Wilson score interval."""
     mean = np.average(data)
@@ -162,3 +168,17 @@ def defensive_mix(weights, ratio: float, mixture: str="random"):
 def weighted_sample_pd(weights: np.ndarray, size: int, replace: bool=False):
     """Sample from a weighted array using pandas."""
     return pd.Series(weights).sample(n=size, replace=replace, weights=weights).index
+
+def calculate_ci_correction(sample: np.ndarray, population_size: int):
+    """Calculate the correction factor for 0.95 confidence interval."""
+    sample_size = len(sample)
+    sample_sum = sample * population_size
+    kurtosis = stats.kurtosis(sample_sum)
+    skewness = stats.skew(sample_sum)
+    logging.debug(f"Kurtosis: {kurtosis}, skewness: {skewness}")
+    t = -2.84 * kurtosis + 4.25 * skewness**2
+    phi = norm.pdf(1 - (1-0.95)/2)
+    return 2. / sample_size * t * phi
+
+def calculate_ci_avg_correctness(sample_size, count_avg, sum_avg):
+    skewness = sum_avg / np.sqrt(sample_size * count_avg * sum_avg + count_avg**2 * sum_avg)

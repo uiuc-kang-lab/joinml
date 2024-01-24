@@ -100,6 +100,18 @@ def get_straight_sampling_CI(config, dataset_sizes, count_gt, sum_gt, avg_gt, sa
     sample_results = np.array(sample_results)
     sample_count_results = np.array(sample_count_results)
     sample_positive_results = np.array(sample_positive_results)
+    count_estimation = np.mean(sample_count_results).item() * np.prod(dataset_sizes, dtype=np.float32).item()
+    sum_estimation = np.mean(sample_results).item() * np.prod(dataset_sizes, dtype=np.float32).item()
+    count_var = np.var(sample_count_results).item() * np.prod(dataset_sizes, dtype=np.float32).item()
+    sum_var = np.var(sample_results).item() * np.prod(dataset_sizes, dtype=np.float32).item()
+    if count_estimation == 0:
+        avg_estimation = np.nan
+        avg_var = np.nan
+    else:
+        avg_estimation = sum_estimation / count_estimation
+        avg_estimation -= get_avg_correction(np.prod(dataset_sizes, dtype=np.float32).item(), 
+                                            config.oracle_budget, count_estimation, avg_estimation, count_var)
+        avg_var = get_avg_var(config.oracle_budget, count_var, count_estimation, sum_var, sum_estimation)
     if config.bootstrap_trials == 0:
         # calculate gaussian confidence interval for sum
         ci_lower, ci_upper = get_ci_gaussian(sample_results, config.confidence_level)
@@ -126,44 +138,60 @@ def get_straight_sampling_CI(config, dataset_sizes, count_gt, sum_gt, avg_gt, sa
         avg_est.log()
         avg_est.save(config.output_file, surfix="_avg")
     else:
-        m_sums = []
-        m_counts = []
-        m_avgs = []
+        sum_estimates_bootstrap = []
+        count_estimates_bootstrap = []
+        avg_estimates_bootstrap = []
+        count_ts = []
+        sum_ts = []
+        avg_ts = []
         for trial in range(config.bootstrap_trials):
             # resample
             resample = np.random.choice(len(sample_results), size=len(sample_results), replace=True)
             resample_results = sample_results[resample]
             resample_count_results = sample_count_results[resample]
-            positive_resample = np.random.choice(len(sample_positive_results), size=len(sample_positive_results), replace=True)
-            resample_positive_results = sample_positive_results[positive_resample]
-            m_sum = np.mean(resample_results).item()
-            m_count = np.mean(resample_count_results).item()
-            m_avg = np.mean(resample_positive_results).item()
-            m_sums.append(m_sum)
-            m_counts.append(m_count)
-            m_avgs.append(m_avg)
-            logging.debug(f"trial {trial} avg {m_avg} sum {m_sum} count {m_count}")
-        m_sums = np.array(m_sums)
-        m_counts = np.array(m_counts)
-        avg_results = np.array(m_avgs)
-        sum_results = m_sums * np.prod(dataset_sizes)
-        count_results = m_counts * np.prod(dataset_sizes)
+            sum_estimate_bootstrap = np.mean(resample_results).item() * np.prod(dataset_sizes, dtype=np.float32).item()
+            count_estimate_bootstrap = np.mean(resample_count_results).item() * np.prod(dataset_sizes, dtype=np.float32).item()
+            count_var_bootstrap = np.var(resample_count_results).item() * np.prod(dataset_sizes, dtype=np.float32).item()
+            sum_var_bootstrap = np.var(resample_results).item() * np.prod(dataset_sizes, dtype=np.float32).item()
+            if count_estimate_bootstrap == 0:
+                avg_estimate_bootstrap = np.nan
+                avg_var_bootstrap = np.nan
+            else:
+                avg_estimate_bootstrap = sum_estimate_bootstrap / count_estimate_bootstrap
+                avg_estimate_bootstrap -= get_avg_correction(np.prod(dataset_sizes, dtype=np.float32).item(), 
+                                            config.oracle_budget, count_estimate_bootstrap, avg_estimate_bootstrap, count_var_bootstrap)
+                avg_var_bootstrap = get_avg_var(config.oracle_budget, count_var_bootstrap, count_estimate_bootstrap, sum_var_bootstrap, sum_estimate_bootstrap)
+            count_ts.append((count_estimate_bootstrap - count_estimation) / np.sqrt(count_var_bootstrap))
+            sum_ts.append((sum_estimate_bootstrap - sum_estimation) / np.sqrt(sum_var_bootstrap))
+            avg_ts.append((avg_estimate_bootstrap - avg_estimation) / np.sqrt(avg_var_bootstrap))
+            sum_estimates_bootstrap.append(sum_estimate_bootstrap)
+            count_estimates_bootstrap.append(count_estimate_bootstrap)
+            avg_estimates_bootstrap.append(avg_estimate_bootstrap)
+        sum_estimates_bootstrap = np.array(sum_estimates_bootstrap)
+        count_estimates_bootstrap = np.array(count_estimates_bootstrap)
+        avg_estimates_bootstrap = np.array(avg_estimates_bootstrap)
         
         # statistics for avg
-        avg_estimates = np.mean(avg_results).item()
-        avg_lower, avg_upper = get_ci_bootstrap(avg_results, confidence_level=config.confidence_level)
-        avg_est = Estimates(config.oracle_budget, avg_gt, avg_estimates, avg_lower, avg_upper)
+        p_lbs, p_ubs, e_lbs, e_ubs, t_lbs, t_ubs = \
+            get_ci_bootstrap(avg_estimates_bootstrap, avg_estimation, avg_ts, avg_var, confidence_levels=[0.95])
+        avg_est = Estimates(config.oracle_budget, avg_gt, avg_estimation, t_lbs, t_ubs)
         avg_est.log()
         avg_est.save(config.output_file, surfix="_avg")
         # statistics for sum
-        sum_estimates = np.mean(sum_results).item()
-        sum_lower, sum_upper = get_ci_bootstrap(sum_results, confidence_level=config.confidence_level)
-        sum_est = Estimates(config.oracle_budget, sum_gt, sum_estimates, sum_lower, sum_upper)
+        p_lbs, p_ubs, e_lbs, e_ubs, t_lbs, t_ubs = \
+            get_ci_bootstrap(sum_estimates_bootstrap, sum_estimation, sum_ts, sum_var, confidence_levels=[0.95])
+        sum_est = Estimates(config.oracle_budget, sum_gt, sum_estimation, t_lbs, t_ubs)
         sum_est.log()
         sum_est.save(config.output_file, surfix="_sum")
         # statistics for count
-        count_estimates = np.mean(count_results).item()
-        count_lower, count_upper = get_ci_bootstrap(count_results, confidence_level=config.confidence_level)
-        count_est = Estimates(config.oracle_budget, count_gt, count_estimates, count_lower, count_upper)
+        p_lbs, p_ubs, e_lbs, e_ubs, t_lbs, t_ubs = \
+            get_ci_bootstrap(count_estimates_bootstrap, count_estimation, count_ts, count_var, confidence_levels=[0.95])
+        count_est = Estimates(config.oracle_budget, count_gt, count_estimation, t_lbs, t_ubs)
         count_est.log()
         count_est.save(config.output_file, surfix="_count")
+
+def get_avg_var(sample_size, count_var, count_mean, sum_var, sum_mean):
+    return 1. / sample_size * (sum_var / count_mean**2 + count_var * sum_mean**2 / count_mean**4)
+
+def get_avg_correction(population_size, sample_size, count_mean, avg_mean, count_var):
+    return (population_size-sample_size)/(population_size-1) * avg_mean * count_var / sample_size / count_mean**2
