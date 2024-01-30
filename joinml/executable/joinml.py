@@ -97,7 +97,7 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
         sampling_strata = [i for i in range(len(strata_population))]
         blocking_strata = []
     else:
-        sampling_strata, blocking_strata = empirical_best_blocking_allocation(strata_population_size, strata_sample_sizes, strata_count_mean_vars)
+        sampling_strata, blocking_strata = empirical_best_blocking_allocation(strata_population_size, strata_sample_sizes, strata_sum_mean_vars)
 
     logging.debug(f"{config.aggregator} sampling strata: {sampling_strata}, {config.aggregator} blocking strata: {blocking_strata}")
 
