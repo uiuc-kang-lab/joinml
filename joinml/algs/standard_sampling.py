@@ -2,9 +2,8 @@ from joinml.proxy.get_proxy import get_proxy_score
 from joinml.dataset_loader import load_dataset
 from joinml.oracle import Oracle
 from joinml.config import Config
-from joinml.utils import set_up_logging, normalize, get_ci_gaussian, get_ci_bootstrap_ttest
+from joinml.utils import set_up_logging, normalize, get_ci_gaussian, get_ci_bootstrap_ttest, get_non_positive_ci
 from joinml.estimates import Estimates
-from joinml.algs.joinml_dep2 import get_non_positive_ci
 
 import logging
 import numpy as np

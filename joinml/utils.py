@@ -179,16 +179,14 @@ def weighted_sample_pd(weights: np.ndarray, size: int, replace: bool=False):
     """Sample from a weighted array using pandas."""
     return pd.Series(weights).sample(n=size, replace=replace, weights=weights).index
 
-def calculate_ci_correction(sample: np.ndarray, population_size: int):
-    """Calculate the correction factor for 0.95 confidence interval."""
-    sample_size = len(sample)
-    sample_sum = sample * population_size
-    kurtosis = stats.kurtosis(sample_sum)
-    skewness = stats.skew(sample_sum)
-    logging.debug(f"Kurtosis: {kurtosis}, skewness: {skewness}")
-    t = -2.84 * kurtosis + 4.25 * skewness**2
-    phi = norm.pdf(1 - (1-0.95)/2)
-    return 2. / sample_size * t * phi
-
-def calculate_ci_avg_correctness(sample_size, count_avg, sum_avg):
-    skewness = sum_avg / np.sqrt(sample_size * count_avg * sum_avg + count_avg**2 * sum_avg)
+def get_non_positive_ci(max_statistics: float, 
+                        confidence_level: float, 
+                        n_positive_population_size: int, 
+                        n_positive_sample_size: int):
+    z = float(stats.norm.ppf(1 - (1 - confidence_level) / 2))
+    pr_upper_bound = 1 / (1+z**2/n_positive_sample_size) * (z**2/n_positive_sample_size)
+    n_positive_count_lower_bound = 0
+    n_positive_count_upper_bound = pr_upper_bound * n_positive_population_size
+    n_positive_sum_lower_bound = 0
+    n_positive_sum_upper_bound = n_positive_count_upper_bound * max_statistics
+    return n_positive_count_lower_bound, n_positive_count_upper_bound, n_positive_sum_lower_bound, n_positive_sum_upper_bound

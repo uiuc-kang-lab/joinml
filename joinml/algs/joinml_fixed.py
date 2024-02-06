@@ -4,25 +4,12 @@ from joinml.oracle import Oracle
 from joinml.config import Config
 from joinml.utils import set_up_logging, normalize
 from joinml.estimates import Estimates
-from joinml.utils import get_ci_bootstrap, get_ci_gaussian
+from joinml.utils import get_ci_gaussian, get_non_positive_ci
 
 import os
 import logging
 import numpy as np
 from scipy import stats
-
-def get_non_positive_ci(max_statistics: float, 
-                        confidence_level: float, 
-                        n_positive_population_size: int, 
-                        n_positive_sample_size: int):
-    z = float(stats.norm.ppf(1 - (1 - confidence_level) / 2))
-    pr_upper_bound = 1 / (1+z**2/n_positive_sample_size) * (z**2/n_positive_sample_size)
-    n_positive_count_lower_bound = 0
-    n_positive_count_upper_bound = pr_upper_bound * n_positive_population_size
-    n_positive_sum_lower_bound = 0
-    n_positive_sum_upper_bound = n_positive_count_upper_bound * max_statistics
-    return n_positive_count_lower_bound, n_positive_count_upper_bound, n_positive_sum_lower_bound, n_positive_sum_upper_bound
-
 
 def run(config: Config):
     set_up_logging(config.log_path, config.log_level)
