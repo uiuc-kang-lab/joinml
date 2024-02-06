@@ -134,6 +134,16 @@ def get_ci_bootstrap(trial_results, estimation, ts, variance, confidence_levels:
         t_ubs.append(t_ub)
     return p_lbs, p_ubs, e_lbs, e_ubs, t_lbs, t_ubs
 
+def get_ci_bootstrap_ttest(estimation, ts, variance, confidence_level: float=0.95):
+    """Get the confidence interval of the data using bootstrap-t."""
+    ts_lb = np.percentile(ts, (1 - confidence_level) / 2 * 100)
+    ts_ub = np.percentile(ts, (1 + confidence_level) / 2 * 100)
+    
+    t_lb = estimation - ts_ub * np.sqrt(variance)
+    t_ub = estimation - ts_lb * np.sqrt(variance)
+
+    return t_lb, t_ub
+
 def get_ci_bootstrap_quantile(trial_results, confidence_level: float=0.95):
     """Get the confidence interval of the data using bootstrap."""
     p_lb = np.percentile(trial_results, (1 - confidence_level) / 2 * 100)

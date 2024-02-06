@@ -4,54 +4,61 @@ from joinml.oracle import Oracle
 from joinml.config import Config
 from joinml.utils import set_up_logging, normalize
 from joinml.estimates import Estimates
-from joinml.utils import get_ci_bootstrap, weighted_sample_pd, calculate_ci_correction
+from joinml.utils import weighted_sample_pd, get_ci_bootstrap_ttest
 
-import os
 import logging
 import numpy as np
 from typing import Tuple, List
-from scipy import stats
 
-def empirical_best_blocking_allocation(strata_population: List[int], strata_sample_sizes: List[int],
-                                       strata_sample_variance: List[float], objective: str="joinml-ci") -> Tuple[List[int], List[int]]:
-    # blocking for all the non-positive data
-    strata_to_decide = []
-    for i in range(len(strata_population)):
-        if not np.isnan(strata_sample_variance[i]):
-            strata_to_decide.append(i)
-
+def adaptive_allocation(strata_population: List[int], strata_sample_sizes: List[int],
+                        strata_count_variance: List[float], strata_count_mean: List[float],
+                        strata_sum_variance: List[float], strata_sum_mean: List[float],
+                        aggregator: str="count") -> Tuple[List[int], List[int]]:
     # calculate the total variance of the sub population
-    total_variances = []
-    for i in range(len(strata_to_decide)):
-        variance = 0
-        total_population = sum([strata_population[j] for j in strata_to_decide[:i+1]])
-        for j in strata_to_decide[:i+1]:
-            variance += (strata_population[j] / total_population)**2 * strata_sample_variance[j]
-        total_variances.append(variance)
-    
-    logging.debug(f"total variances: {total_variances}")
-    
-    # calculate the utility based on the objective
-    utility = []
-    for i in range(len(strata_to_decide)):
-        utility.append(total_variances[i])
-    logging.debug(f"utility: {utility}")
-
-    min_utility = np.min(utility)
-    optimal_allocation = 1 + [i for i in range(len(utility)) if utility[i] == min_utility][-1]
-
-    logging.debug(f"optimal allocation {optimal_allocation} utility {min_utility}")
-    strata_for_sampling = strata_to_decide[:optimal_allocation]
-    strata_for_blocking = []
+    count_total_variances = []
+    sum_total_variances = []
+    avg_total_variances = []
     for i in range(len(strata_population)):
-        if i not in strata_for_sampling:
-            strata_for_blocking.append(i)
+        count_variance = 0
+        sum_variance = 0
+        count_mean = 0
+        sum_mean = 0
+        total_population = sum([strata_population[j] for j in range(i+1)])
+        for j in range(i+1):
+            count_variance += (strata_population[j] / total_population)**2 * strata_count_variance[j]
+            sum_variance += (strata_population[j] / total_population)**2 * strata_sum_variance[j]
+            count_mean += (strata_population[j] / total_population) * strata_count_mean[j]
+            sum_mean += (strata_population[j] / total_population) * strata_sum_mean[j]
+        avg_variance = (sum_mean / count_mean)**2 * (count_variance / count_mean**2 + sum_variance / sum_mean**2)
+        count_total_variances.append(count_variance)
+        sum_total_variances.append(sum_variance)
+        avg_total_variances.append(avg_variance)
+    
+    logging.debug(f"count variances: {count_total_variances}")
+    logging.debug(f"sum variances: {sum_total_variances}")
+    logging.debug(f"avg variances: {avg_total_variances}")
+    
+    # find the best allocation according to aggregator
+    if aggregator == "count":
+        min_variance = np.min(count_total_variances)
+        optimal_allocation = 1 + [i for i in range(len(count_total_variances)) if count_total_variances[i] == min_variance][-1]
+    elif aggregator == "sum":
+        min_variance = np.min(sum_total_variances)
+        optimal_allocation = 1 + [i for i in range(len(sum_total_variances)) if sum_total_variances[i] == min_variance][-1]
+    else:
+        min_variance = np.min(avg_total_variances)
+        optimal_allocation = 1 + [i for i in range(len(avg_total_variances)) if avg_total_variances[i] == min_variance][-1]        
+
+    logging.debug(f"optimal allocation {optimal_allocation} utility {min_variance}")
+    strata_for_sampling = list(range(optimal_allocation))
+    strata_for_blocking = list(range(optimal_allocation, len(strata_population)))
     return strata_for_sampling, strata_for_blocking
 
 def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, avg_gt, proxy_scores, strata, strata_population, strata_sample_sizes):
-
     strata_sample_count_results = []    # O(x)
     strata_sample_sum_results = []      # f(x) * O(x)
+    strata_count_mean = []       # mean of O(x)
+    strata_sum_mean = []         # mean of f(x) * O(x)
     strata_count_mean_vars = []         # variance of O(x)
     strata_sum_mean_vars = []           # variance of f(x) * O(x)
     # run sampling with replacement for each stratum
@@ -79,25 +86,26 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
         strata_sample_count_results.append(stratum_sample_count_results)
         strata_sample_sum_results.append(stratum_sample_sum_results)
 
-        # calculate variance of mean
+        # calculate variance and mean
         stratum_count_mean_var = np.var(stratum_sample_count_results, ddof=1).item() / len(stratum_sample_count_results)
         stratum_sum_mean_var = np.var(stratum_sample_sum_results, ddof=1).item() / len(stratum_sample_sum_results)
         strata_count_mean_vars.append(stratum_count_mean_var)
         strata_sum_mean_vars.append(stratum_sum_mean_var)
+        strata_count_mean.append(np.mean(stratum_sample_count_results))
+        strata_sum_mean.append(np.mean(stratum_sample_sum_results))
 
     logging.debug(f"strata count vars: {strata_count_mean_vars} sum vars: {strata_sum_mean_vars}")
-    logging.debug(f"strata count means: {[np.mean(stratum_sample_count_result) for stratum_sample_count_result in strata_sample_count_results]} sum means: {[np.mean(stratum_sample_sum_result) for stratum_sample_sum_result in strata_sample_sum_results]}")
+    logging.debug(f"strata count means: {strata_count_mean} sum means: {strata_sum_mean}")
 
     strata_population_size = [len(stratum_population) for stratum_population in strata_population]
 
     if sum(strata_sample_count_results[0]) == 0:
         sampling_strata = [0]
         blocking_strata = [i for i in range(1, len(strata_population))]
-    elif config.dataset_name == "VeRi":
-        sampling_strata = [i for i in range(len(strata_population))]
-        blocking_strata = []
     else:
-        sampling_strata, blocking_strata = empirical_best_blocking_allocation(strata_population_size, strata_sample_sizes, strata_sum_mean_vars)
+        sampling_strata, blocking_strata = adaptive_allocation(strata_population_size, strata_sample_sizes, 
+                                                               strata_count_mean_vars, strata_count_mean, strata_sum_mean_vars, strata_sum_mean, 
+                                                               aggregator=config.aggregator)
 
     logging.debug(f"{config.aggregator} sampling strata: {sampling_strata}, {config.aggregator} blocking strata: {blocking_strata}")
 
@@ -175,20 +183,18 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
     logging.debug(f"count estimation {count_estimation} sum estimation {sum_estimation} avg estimation {avg_estimation}")
     logging.debug(f"count var {count_var} sum var {sum_var} avg var {avg_var}")
 
-    # correct bootstrapping ci
-    all_count_sample = np.concatenate(strata_sample_count_results)
-    all_sum_sample = np.concatenate(strata_sample_sum_results)
-    count_ci_correction = calculate_ci_correction(all_count_sample, population_size)
-    sum_ci_correction = calculate_ci_correction(all_sum_sample, population_size)
-    logging.debug(f"count ci correction {count_ci_correction} sum ci correction {sum_ci_correction}")
+    if config.aggregator == "count":
+        point_estimate = count_estimation
+        point_var = count_var
+    elif config.aggregator == "sum":
+        point_estimate = sum_estimation
+        point_var = sum_var
+    else:
+        point_estimate = avg_estimation
+        point_var = avg_var
 
     # run bootstrapping
-    count_bootstraps = []
-    sum_bootstraps = []
-    avg_bootstraps = []
-    count_ts = []
-    sum_ts = []
-    avg_ts = []
+    ts = []
     for i in range(config.bootstrap_trials):
         # sample with replacement
         strata_sample_count_results_bootstrap = []
@@ -198,60 +204,22 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
             strata_sample_count_results_bootstrap.append(strata_sample_count_results[i][stratum_resample])
             strata_sample_sum_results_bootstrap.append(strata_sample_sum_results[i][stratum_resample])
         count_estimation_bootstrap, sum_estimation_bootstrap, avg_estimation_bootstrap = stats_func(strata_population, strata_sample_count_results_bootstrap, strata_sample_sum_results_bootstrap)
-        count_bootstraps.append(count_estimation_bootstrap)
-        sum_bootstraps.append(sum_estimation_bootstrap)
-        avg_bootstraps.append(avg_estimation_bootstrap)
         count_var_bootstrap = get_stratified_var(strata_population, strata_sample_count_results_bootstrap)
         sum_var_bootstrap = get_stratified_var(strata_population, strata_sample_sum_results_bootstrap)
         avg_var_bootstrap = get_avg_var(sample_size, count_var_bootstrap, count_estimation_bootstrap, sum_var_bootstrap, sum_estimation_bootstrap)
-        count_ts.append((count_estimation_bootstrap - count_estimation) / np.sqrt(count_var_bootstrap))
-        sum_ts.append((sum_estimation_bootstrap - sum_estimation) / np.sqrt(sum_var_bootstrap))
-        avg_ts.append((avg_estimation_bootstrap - avg_estimation) / np.sqrt(avg_var_bootstrap))
+        if config.aggregator == "count":
+            ts.append((count_estimation_bootstrap - count_estimation) / np.sqrt(count_var_bootstrap))
+        elif config.aggregator == "sum":
+            ts.append((sum_estimation_bootstrap - sum_estimation) / np.sqrt(sum_var_bootstrap))
+        else:
+            ts.append((avg_estimation_bootstrap - avg_estimation) / np.sqrt(avg_var_bootstrap))
 
-    # get confidence interval
-    log_ci(config, count_gt, sum_gt, avg_gt, count_estimation, sum_estimation, avg_estimation, 
-           count_var, sum_var, avg_var, count_bootstraps, sum_bootstraps, avg_bootstraps, 
-           count_ts, sum_ts, avg_ts)
-
-def log_ci(config, count_gt, sum_gt, avg_gt, count_estimation, sum_estimation, avg_estimation, count_var, sum_var, avg_var, count_bootstraps, sum_bootstraps, avg_bootstraps, count_ts, sum_ts, avg_ts):
-    p_lbs, p_ubs, e_lbs, e_ubs, t_lbs, t_ubs = \
-        get_ci_bootstrap(count_bootstraps, count_estimation, count_ts, count_var, confidence_levels=[0.95, 0.96, 0.97, 0.98, 0.99])
-    est = Estimates(config.oracle_budget, count_gt, count_estimation, p_lbs, p_ubs)
+    # calculate confidence interval
+    lb, ub = get_ci_bootstrap_ttest(point_estimate, ts, point_var, confidence_level=config.confidence_level)
+    logging.info(f"point estimate: {point_estimate}, confidence interval: ({lb}, {ub})")
+    est = Estimates(config.oracle_budget, point_estimate, point_var, lb, ub)
     est.log()
-    est.save(config.output_file, "_count_percentile")
-    est = Estimates(config.oracle_budget, count_gt, count_estimation, e_lbs, e_ubs)
-    est.log()
-    est.save(config.output_file, "_count_empirical")
-    est = Estimates(config.oracle_budget, count_gt, count_estimation, t_lbs, t_ubs)
-    est.log()
-    est.save(config.output_file, "_count_ttest")
-
-    p_lbs, p_ubs, e_lbs, e_ubs, t_lbs, t_ubs = \
-        get_ci_bootstrap(sum_bootstraps, sum_estimation, sum_ts, sum_var, confidence_levels=[0.95, 0.96, 0.97, 0.98, 0.99])
-    est = Estimates(config.oracle_budget, sum_gt, sum_estimation, p_lbs, p_ubs)
-    est.log()
-    est.save(config.output_file, "_sum_percentile")
-    est = Estimates(config.oracle_budget, sum_gt, sum_estimation, e_lbs, e_ubs)
-    est.log()
-    est.save(config.output_file, "_sum_empirical")
-    est = Estimates(config.oracle_budget, sum_gt, sum_estimation, t_lbs, t_ubs)
-    est.log()
-    est.save(config.output_file, "_sum_ttest")
-
-    p_lbs, p_ubs, e_lbs, e_ubs, t_lbs, t_ubs = \
-        get_ci_bootstrap(avg_bootstraps, avg_estimation, avg_ts, avg_var, confidence_levels=[0.95, 0.96, 0.97, 0.98, 0.99])
-    est = Estimates(config.oracle_budget, avg_gt, avg_estimation, p_lbs, p_ubs)
-    est.log()
-    est.save(config.output_file, "_avg_percentile")
-    est = Estimates(config.oracle_budget, avg_gt, avg_estimation, e_lbs, e_ubs)
-    est.log()
-    est.save(config.output_file, "_avg_empirical")
-    est = Estimates(config.oracle_budget, avg_gt, avg_estimation, t_lbs, t_ubs)
-    est.log()
-    est.save(config.output_file, "_avg_ttest")
-
-
-
+    est.save(config.output_file, f"_{config.aggregator}")
 
 def stats_func(strata_population, strata_sample_count_results, strata_sample_sum_results) -> Tuple[float, float, float]:
     population_size = sum([len(stratum_population) for stratum_population in strata_population])
@@ -260,7 +228,6 @@ def stats_func(strata_population, strata_sample_count_results, strata_sample_sum
     count_var = get_stratified_var(strata_population, strata_sample_count_results)
     avg_estimation -= get_avg_correction(population_size, sample_size, count_estimation, avg_estimation, count_var)
     return count_estimation, sum_estimation, avg_estimation
-
 
 def get_estimation(strata_population, strata_sample_count_results, strata_sample_sum_results):
     count_estimation = 0
@@ -288,7 +255,6 @@ def get_stratified_var(strata_population, strata_sample_results):
 
 def get_avg_var(sample_size, count_var, count_mean, sum_var, sum_mean):
     return 1. / sample_size * (sum_var / count_mean**2 + count_var * sum_mean**2 / count_mean**4)
-
 
 def get_gt_strata(config, strata_population: List[List[int]], dataset_sizes, dataset: JoinDataset, oracle: Oracle) -> List[int]:
     gts = [-1, ]

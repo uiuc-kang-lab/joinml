@@ -6,8 +6,8 @@ class Estimates:
     def __init__(self, cost: float, gt: float, est: float, lbs, ubs) -> None:
         self.gt = gt
         self.est = est
-        self.lbs = lbs
-        self.ubs = ubs
+        self.lbs = lbs if isinstance(lbs, list) else [lbs]
+        self.ubs = ubs if isinstance(ubs, list) else [ubs]
         self.true_error = (self.est - self.gt) / self.gt
         self.lb_errors = [(lb - self.gt) / self.gt for lb in self.lbs]
         self.ub_errors = [(ub - self.gt) / self.gt for ub in self.ubs]

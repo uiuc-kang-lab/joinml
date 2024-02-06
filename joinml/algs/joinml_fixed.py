@@ -106,29 +106,25 @@ def run(config: Config):
                 blocking_results.append(0)
                 blocking_count_results.append(0)
         
-        ci_count_lower = ci_count_lower * len(sampling_data) + np.sum(blocking_count_results)
-        ci_count_upper = ci_count_upper * len(sampling_data) + np.sum(blocking_count_results)
-        ci_sum_lower = ci_sum_lower * len(sampling_data) + np.sum(blocking_results)
-        ci_sum_upper = ci_sum_upper * len(sampling_data) + np.sum(blocking_results)
-        ci_avg_lower = ci_avg_lower * len(sampling_data) / len(proxy_rank) + \
-            np.mean(blocking_avg_results).item() * (1 - len(sampling_data) / len(proxy_rank))
-        ci_avg_upper = ci_avg_upper * len(sampling_data) / len(proxy_rank) + \
-            np.mean(blocking_avg_results).item() * (1 - len(sampling_data) / len(proxy_rank))
+        if config.aggregator == "count":
+            lb = ci_count_lower * len(sampling_data) + np.sum(blocking_count_results)
+            ub = ci_count_upper * len(sampling_data) + np.sum(blocking_count_results)
+            estimate = np.mean(sampling_count_results).item() * len(sampling_data) + np.sum(blocking_count_results)
+            gt = count_gt
+        elif config.aggregator == "sum":
+            lb = ci_sum_lower * len(sampling_data) + np.sum(blocking_results)
+            ub = ci_sum_upper * len(sampling_data) + np.sum(blocking_results)
+            estimate = np.mean(sampling_results).item() * len(sampling_data) + np.sum(blocking_results)
+            gt = sum_gt
+        else:
+            lb = ci_avg_lower * len(sampling_data) / len(proxy_rank) + \
+                np.mean(blocking_avg_results).item() * (1 - len(sampling_data) / len(proxy_rank))
+            ub = ci_avg_upper * len(sampling_data) / len(proxy_rank) + \
+                np.mean(blocking_avg_results).item() * (1 - len(sampling_data) / len(proxy_rank))
+            estimate = (np.sum(sampling_avg_results) + np.sum(blocking_avg_results)) / (len(sampling_avg_results) + len(blocking_avg_results))
+            gt = avg_gt
 
-        logging.debug(f"sampling results {np.mean(sampling_count_results).item() * len(sampling_data)}, blocking results {np.sum(blocking_count_results)}")
+        est = Estimates(config.oracle_budget, gt, estimate, lb, ub)
+        est.log()
+        est.save(config.output_file, f"_{config.blocking_ratio}_{config.aggregator}")
 
-        count_estimate = np.mean(sampling_count_results).item() * len(sampling_data) + np.sum(blocking_count_results)
-        sum_estimate = np.mean(sampling_results).item() * len(sampling_data) + np.sum(blocking_results)
-        avg_estimate = (np.sum(sampling_avg_results) + np.sum(blocking_avg_results)) / (len(sampling_avg_results) + len(blocking_avg_results))
-
-        count_est = Estimates(config.blocking_ratio, count_gt, count_estimate, [ci_count_lower], [ci_count_upper])
-        sum_est = Estimates(config.blocking_ratio, sum_gt, sum_estimate, [ci_sum_lower], [ci_sum_upper])
-        avg_est = Estimates(config.blocking_ratio, avg_gt, avg_estimate, [ci_avg_lower], [ci_avg_upper])
-
-        count_est.log()
-        sum_est.log()
-        avg_est.log()
-
-        count_est.save(config.output_file, "_count")
-        sum_est.save(config.output_file, "_sum")
-        avg_est.save(config.output_file, "_avg")

@@ -2,9 +2,8 @@ from joinml.proxy.get_proxy import get_proxy_score, get_proxy_rank
 from joinml.dataset_loader import load_dataset, JoinDataset
 from joinml.oracle import Oracle
 from joinml.config import Config
-from joinml.utils import set_up_logging, normalize
+from joinml.utils import set_up_logging
 from joinml.estimates import Estimates
-from joinml.utils import get_ci_bootstrap, weighted_sample_pd
 
 import logging
 import numpy as np
@@ -57,16 +56,18 @@ def run(config: Config):
                 sample_count += 1
                 sample_sum += dataset.get_statistics(sample_id)
         # get the estimates
-        count_estimate = sample_count / blocking_budget * len(unblocked_population)
-        sum_estimate = sample_sum / blocking_budget * len(unblocked_population)
-        avg_estimate = sample_sum / sample_count
+                
+        if config.aggregator == "count":
+            estimate = sample_count / blocking_budget * len(unblocked_population)
+            gt = count_gt
+        elif config.aggregator == "sum":
+            estimate = sample_sum / blocking_budget * len(unblocked_population)
+            gt = sum_gt
+        else:
+            estimate = sample_sum / sample_count
+            gt = avg_gt
 
-        count_est = Estimates(config.oracle_budget, count_gt, count_estimate, [0], [0])
-        sum_est = Estimates(config.oracle_budget, sum_gt, sum_estimate, [0], [0])
-        avg_est = Estimates(config.oracle_budget, avg_gt, avg_estimate, [0], [0])
-        count_est.log()
-        sum_est.log()
-        avg_est.log()
-        count_est.save(output_file=config.output_file, surfix="_count")
-        sum_est.save(output_file=config.output_file, surfix="_sum")
-        avg_est.save(output_file=config.output_file, surfix="_avg")
+        est = Estimates(config.oracle_budget, gt, estimate, [0], [0])
+        est.log()
+        est.save(output_file=config.output_file, surfix=f"_{config.aggregator}")
+
