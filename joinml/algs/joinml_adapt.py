@@ -186,12 +186,15 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
     if config.aggregator == "count":
         point_estimate = count_estimation
         point_var = count_var
+        gt = count_gt
     elif config.aggregator == "sum":
         point_estimate = sum_estimation
         point_var = sum_var
+        gt = sum_gt
     else:
         point_estimate = avg_estimation
         point_var = avg_var
+        gt = avg_gt
 
     # run bootstrapping
     ts = []
@@ -217,7 +220,7 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
     # calculate confidence interval
     lb, ub = get_ci_bootstrap_ttest(point_estimate, ts, point_var, confidence_level=config.confidence_level)
     logging.info(f"point estimate: {point_estimate}, confidence interval: ({lb}, {ub})")
-    est = Estimates(config.oracle_budget, point_estimate, point_var, lb, ub)
+    est = Estimates(config.oracle_budget, gt, point_estimate, lb, ub)
     est.log()
     est.save(config.output_file, f"_{config.aggregator}")
 
