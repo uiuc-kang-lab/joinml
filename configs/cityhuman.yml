@@ -6,4 +6,4 @@ proxy_score_cache: True
 proxy_normalizing_style: "proportional"
 bootstrap_trials: 1000
 aggregator: "avg"
-proxy: "humanreid"
+proxy: "human_reid"

@@ -6,6 +6,8 @@ from joinml.algs.standard_sampling import run as sampling
 from joinml.algs.blocking_noci import run as blocking_noci
 from joinml.algs.joinml_fixed import run as joinml_fixed
 from joinml.algs.joinml_adapt import run as joinml_adapt
+from joinml.algs.wanderjoin import run as wanderjoin
+from joinml.algs.post_hoc_var import run as post_hoc
 from joinml.utils import set_random_seed
 
 def run(config: Config):
@@ -21,6 +23,10 @@ def run(config: Config):
         joinml_fixed(config)
     elif config.task == "joinml-adapt":
         joinml_adapt(config)
+    elif config.task == "wanderjoin":
+        wanderjoin(config)
+    elif config.task == "post-hoc":
+        post_hoc(config)
     else:
         raise ValueError(f"Unknown task: {config.task}")
 

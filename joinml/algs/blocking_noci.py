@@ -2,7 +2,7 @@ from joinml.proxy.get_proxy import get_proxy_score, get_proxy_rank
 from joinml.dataset_loader import load_dataset, JoinDataset
 from joinml.oracle import Oracle
 from joinml.config import Config
-from joinml.utils import set_up_logging
+from joinml.utils import set_up_logging, get_cutoff_score
 from joinml.estimates import Estimates
 
 import logging
@@ -25,22 +25,25 @@ def run(config: Config):
 
     count_gt, sum_gt, avg_gt = dataset.get_gt(oracle)
 
-    sampling_budget = config.oracle_budget // 2
-    blocking_budget = config.oracle_budget - sampling_budget
+    # sampling_budget = config.oracle_budget // 2
+    # blocking_budget = config.oracle_budget - sampling_budget
+    blocking_budget = config.oracle_budget
+
     proxy_weights = get_proxy_score(config, dataset)
+    cutoff_score = get_cutoff_score(config.dataset_name)
+    logging.debug(f"cutoff_score: {cutoff_score}")
 
     for _ in range(config.internal_loop):
         # get a uniform sampling of the whole dataset
-        sample = np.random.choice(np.prod(dataset_sizes), size=sampling_budget)
-        positive_sample_scores = []
-        sample_ids = np.array(np.unravel_index(sample, dataset_sizes)).T
-        for s, sample_id in zip(sample, sample_ids):
-            if oracle.query(sample_id):
-                positive_sample_scores.append(proxy_weights[s])
-        if len(positive_sample_scores) == 0:
-            return
-        cutoff_score = min(positive_sample_scores)
-        logging.debug(f"cutoff_score: {cutoff_score}")
+        # sample = np.random.choice(np.prod(dataset_sizes), size=sampling_budget)
+        # positive_sample_scores = []
+        # sample_ids = np.array(np.unravel_index(sample, dataset_sizes)).T
+        # for s, sample_id in zip(sample, sample_ids):
+        #     if oracle.query(sample_id):
+        #         positive_sample_scores.append(proxy_weights[s])
+        # if len(positive_sample_scores) == 0:
+        #     return
+        # cutoff_score = min(positive_sample_scores)
 
         # get the id of data with a score larger than the cutoff score
         unblocked_population = np.argwhere(proxy_weights >= cutoff_score).reshape(-1)

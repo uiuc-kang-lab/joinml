@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-
+from typing import Union
 @dataclass
 class Config:
     """Configuration class for JoinML."""
     data_path: str = "data"
-    cache_path: str|None = "."
+    cache_path: Union[str,None] = "."
     model_cache_path: str = f"{cache_path}/models"
     log_path: str = "logs/test.log"
     dataset_name: str = "company"

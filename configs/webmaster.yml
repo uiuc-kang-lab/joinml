@@ -1,5 +1,5 @@
 data_path: "data"
-dataset_name: "webmaster"
+dataset_name: "webmasters"
 is_self_join: True
 confidence_level: 0.95
 proxy_score_cache: True

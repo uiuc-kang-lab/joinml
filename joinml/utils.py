@@ -10,6 +10,7 @@ import sys
 from scipy import stats
 from scipy.stats import norm, t
 import pandas as pd
+import json
 
 csv.field_size_limit(sys.maxsize)
 
@@ -190,3 +191,9 @@ def get_non_positive_ci(max_statistics: float,
     n_positive_sum_lower_bound = 0
     n_positive_sum_upper_bound = n_positive_count_upper_bound * max_statistics
     return n_positive_count_lower_bound, n_positive_count_upper_bound, n_positive_sum_lower_bound, n_positive_sum_upper_bound
+
+def get_cutoff_score(dataset: str):
+    with open("block_noci/valid_threshold.json") as f:
+        thresholds = json.load(f)
+    return thresholds[dataset]
+    

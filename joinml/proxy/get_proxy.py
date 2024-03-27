@@ -8,9 +8,11 @@ from joinml.dataset_loader import JoinDataset
 from joinml.commons import kind2proxy
 from joinml.utils import preprocess
 
+
 import logging
 import numpy as np
 import os
+from typing import Union
 
 def get_proxy(config: Config):
     if config.proxy in kind2proxy["image_embedding"]:
@@ -28,7 +30,7 @@ def get_proxy(config: Config):
     else:
         raise NotImplementedError(f"Proxy {config.proxy} not implemented.")
 
-def get_proxy_score(config: Config, dataset: JoinDataset) -> np.ndarray:
+def get_proxy_score(config: Config, dataset: JoinDataset, is_wanderjoin: bool=False) -> np.ndarray:
     # check cache for proxy scores
     proxy_store_path = f"{config.cache_path}/{config.dataset_name}_{config.proxy.split('/')[-1]}_scores.npy"
     dataset_sizes = dataset.get_sizes()
@@ -54,9 +56,15 @@ def get_proxy_score(config: Config, dataset: JoinDataset) -> np.ndarray:
             logging.info("Saving proxy scores to %s", proxy_store_path)
             np.save(proxy_store_path, proxy_scores)
 
+    if is_wanderjoin:
+        proxy_scores = np.reshape(proxy_scores, dataset_sizes)
+        proxy_scores = proxy_scores / np.sum(proxy_scores, axis=1).reshape(-1, 1)
+        proxy_scores = proxy_scores / proxy_scores.shape[0]
+        proxy_scores = proxy_scores.flatten()
+
     return proxy_scores
 
-def get_proxy_rank(config: Config, dataset: JoinDataset, proxy_scores: np.ndarray|None=None):
+def get_proxy_rank(config: Config, dataset: JoinDataset, proxy_scores: Union[np.ndarray,None]=None):
     dataset_sizes = dataset.get_sizes()
     if config.is_self_join:
         dataset_sizes = [dataset_sizes[0], dataset_sizes[0]]

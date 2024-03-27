@@ -1,5 +1,5 @@
 data_path: "data"
-dataset_name: "veri"
+dataset_name: "VeRi"
 is_self_join: False
 confidence_level: 0.95
 proxy_score_cache: True
