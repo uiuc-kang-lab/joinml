@@ -6,10 +6,10 @@ import time
 
 def parse_args() -> Config:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset_config", type=str, default="configs/company.yaml")
+    parser.add_argument("--dataset_config", type=str, default="configs/company.yml")
     parser.add_argument("--task", type=str, default="joinml-adapt")
     parser.add_argument("--data_path", type=str, default="data")
-    parser.add_argument("--cache_path", type=str, default="../.cache/joinml")
+    parser.add_argument("--cache_path", type=str, default="../cache")
     parser.add_argument("--oracle_budget", type=int, default=1000000)
     parser.add_argument("--max_blocking_ratio", type=float, default=0.2)
     parser.add_argument("--internal_loop", type=int, default=500)

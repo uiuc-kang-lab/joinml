@@ -65,6 +65,7 @@ class OpencvProxy(Proxy):
         for i in range(len(hist1)):
             for j in range(len(hist2)):
                 scores[i][j] = self.sim_func(hist1[i], hist2[j])
+        print(scores.shape)
         return scores
 
     """

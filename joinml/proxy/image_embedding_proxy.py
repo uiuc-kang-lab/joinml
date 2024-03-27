@@ -17,7 +17,7 @@ from collections import OrderedDict
 from PIL import Image
 from tqdm import tqdm
 import torchreid
-
+import logging
 
 class Normalize(nn.Module):
     def __init__(self, p=2):
@@ -330,6 +330,7 @@ def _run_human_reid(model: nn.modules, image_path: List[str],
             batch_images = images[i:i+batch_size]
             batch_features = model(batch_images)
             features.append(batch_features)
+            print(f"finish {i}")
         features = torch.cat(features, dim=0)
         features = features.cpu().numpy()
     return features
@@ -353,20 +354,21 @@ class ImageEmbeddingProxy(Proxy):
         self.batch_size = config.batch_size
 
     def get_proxy_score_for_tables(self, table1: List[str], table2: List[str], is_self_join: bool=False) -> np.ndarray:
-        feature1_cache = f"{self.config.cache_path}/{self.config.dataset_name}_{self.config.proxy.split('/')[-1]}_0.npy"
-        feature2_cache = f"{self.config.cache_path}/{self.config.dataset_name}_{self.config.proxy.split('/')[-1]}_1.npy"
-        if not os.path.exists(feature1_cache):
-            features1 = self.run(self.model, table1, device=self.device, batch_size=self.batch_size)
-            np.save(feature1_cache, features1)
-        else:
-            features1 = np.load(feature1_cache)
+        # feature1_cache = f"{self.config.cache_path}/{self.config.dataset_name}_{self.config.proxy.split('/')[-1]}_0.npy"
+        # feature2_cache = f"{self.config.cache_path}/{self.config.dataset_name}_{self.config.proxy.split('/')[-1]}_1.npy"
+        # if not os.path.exists(feature1_cache):
+        features1 = self.run(self.model, table1, device=self.device, batch_size=self.batch_size)
+            # np.save(feature1_cache, features1)
+        # else:
+            # features1 = np.load(feature1_cache)
         if is_self_join:
             features2 = features1
-        elif not os.path.exists(feature2_cache):
-            features2 = self.run(self.model, table2, device=self.device, batch_size=self.batch_size)
-            np.save(feature2_cache, features2)
+        # elif not os.path.exists(feature2_cache):
         else:
-            features2 = np.load(feature2_cache)
+            features2 = self.run(self.model, table2, device=self.device, batch_size=self.batch_size)
+            # np.save(feature2_cache, features2)
+        # else:
+            # features2 = np.load(feature2_cache)
         return calculate_score_for_tables(features1, features2)
 
     def get_proxy_score_for_tuples(self, tuples: List[List[str]]) -> np.ndarray:

@@ -4,6 +4,7 @@ dataset2modality = {
     "company": "text",
     "webmasters": "text",
     "city_human": "image",
+    "city_human_three": "image",
     "VeRi": "image",
     "flickr30k": "multimodal"
 }

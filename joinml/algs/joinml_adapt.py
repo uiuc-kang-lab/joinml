@@ -283,21 +283,21 @@ def run(config: Config):
 
     # dataset, oracle
     dataset = load_dataset(config)
-    oracle = Oracle(config)
 
     # setup dataset
     dataset_sizes = dataset.get_sizes()
     if config.is_self_join:
         dataset_sizes = (dataset_sizes[0], dataset_sizes[0])
     
-    count_gt, sum_gt, avg_gt = dataset.get_gt(oracle)
-
-    logging.debug(f"count gt: {count_gt}, sum gt: {sum_gt}, avg gt: {avg_gt}")
-
     # get proxy
     proxy_scores = get_proxy_score(config, dataset)
     proxy_rank = get_proxy_rank(config, dataset, proxy_scores)
     proxy_sum = proxy_scores.sum()
+
+    # setup oracle
+    oracle = Oracle(config)
+    count_gt, sum_gt, avg_gt = dataset.get_gt(oracle)
+    logging.info(f"count gt: {count_gt}, sum gt: {sum_gt}, avg gt: {avg_gt}")
 
     # divide population into strata:
     # 1. a big stratum to only run sampling algorithm
