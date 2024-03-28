@@ -33,3 +33,27 @@ class Estimates:
                 "coverages": self.coverages
                 }, f)
             f.write("\n")
+
+class Selection:
+    def __init__(self, cost: float, type: str, target: float, recall: float, precision: float) -> None:
+        self.cost = cost
+        self.type = type
+        self.target = target
+        self.recall = recall
+        self.precision = precision
+    
+    def log(self):
+        logging.info("budget: {} type {} target {} recall {} precision {}".format(
+            self.cost, self.type, self.target, self.recall, self.precision))
+        
+    def save(self, output_file: str, surfix: str = ""):
+        output_file = output_file.split(".")[0] + surfix + ".jsonl"
+        with open(f"{output_file}", "a+") as f:
+            json.dump({
+                "budget": float(self.cost),
+                "type": self.type,
+                "target": float(self.target),
+                "recall": float(self.recall),
+                "precision": float(self.precision)
+                }, f)
+            f.write("\n")
