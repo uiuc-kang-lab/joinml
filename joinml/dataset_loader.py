@@ -34,10 +34,16 @@ class JoinDataset:
         dataset_sizes = self.get_sizes()
         count_gt = 0
         sum_gt = 0
-        for (i, j) in oracle.oracle_labels:
-            count_gt += 1
-            sum_gt += self.get_statistics([int(i), int(j)])
-        avg_gt = sum_gt / count_gt
+        if len(dataset_sizes) <= 2:
+            for (i, j) in oracle.oracle_labels:
+                count_gt += 1
+                sum_gt += self.get_statistics([int(i), int(j)])
+            avg_gt = sum_gt / count_gt
+        elif len(dataset_sizes) == 3:
+            for (i, j, k) in oracle.oracle_labels:
+                count_gt += 1
+                sum_gt += self.get_statistics([int(i), int(j)])
+            avg_gt = sum_gt / count_gt
         return count_gt, sum_gt, avg_gt
     
 
@@ -116,8 +122,8 @@ class VideoDataset(JoinDataset):
         return join_column_per_table
     
     def get_statistics(self, table_ids: List[int]) -> float:
-        id1, id2 = table_ids
-        if self.dataset == "city_human":
+        id1, id2 = table_ids[:2]
+        if self.dataset in ["city_human", "city_human_three"]:
             x_pos1 = self.tables[0]["x"][id1]
             x_pos2 = self.tables[1]["x"][id2]
             return abs(x_pos1 - x_pos2)

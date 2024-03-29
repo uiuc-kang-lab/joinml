@@ -13,6 +13,9 @@ class Oracle:
         
         logging.info("Loading oracle labels from %s", oracle_label_file)
         raw_oracle_label_list = read_csv(oracle_label_file)
+        if raw_oracle_label_list[0][0] == "id1":
+            raw_oracle_label_list = raw_oracle_label_list[1:]
+        self.n_cols = len(raw_oracle_label_list[0])
         self.oracle_labels = set([tuple(row) for row in raw_oracle_label_list])
     
     def query(self, data: Tuple[int]):

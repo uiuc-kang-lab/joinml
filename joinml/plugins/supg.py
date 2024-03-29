@@ -1,5 +1,6 @@
 from typing import List, Tuple
 import numpy as np
+import logging
 
 def get_ci(z: np.ndarray, alpha: float) -> Tuple[float, float]:
     """
@@ -29,8 +30,9 @@ def supg_recall_target_importance(target: float, oracle_results: np.ndarray, sam
     # get adjusted recall
     lb1, ub1 = get_ci(z1, 0.025)
     lb2, ub2 = get_ci(z2, 0.025)
-    gamma = ub1 / (ub1 + ub2)
+    gamma = max(ub1 / (ub1 + lb2), target)
     target_positive = np.ceil(gamma * total_positive)
+    logging.info(f"new target positives: {target_positive}")
     assert gamma < 1
     for i in range(len(m)-1, 0, -1):
         if np.sum(m[i:]) > target_positive:
@@ -50,9 +52,11 @@ def supg_recall_target_uniform(target: float, oracle_results: np.ndarray, sampli
     z2[sampling_weights >= tau0] = 0
     lb1, ub1 = get_ci(z1, 0.025)
     lb2, ub2 = get_ci(z2, 0.025)
-    gamma = ub1 / (ub1 + ub2)
-    assert gamma < 1
+    gamma = ub1 / (ub1 + lb2)
+    if gamma < 1:
+        return min(sampling_weights[oracle_results > 0])
     target_positive = np.ceil(gamma * np.sum(oracle_results))
+    tau = min(sampling_weights)
     for i in range(len(oracle_results)-1, 0, -1):
         if np.sum(oracle_results[i:]) > target_positive:
             tau = sampling_weights[i]
@@ -63,11 +67,12 @@ def supg_precision_target_importance(target: float, oracle_results: np.ndarray, 
     # unweight sampling weights
     m = 1 / sampling_weights / dataset_size
     candidates = []
-    for i in range(0, len(m)-100, 100):
+    for i in range(len(m)-5000, len(m)-50, 50):
         tau = sampling_weights[i]
         curr_z = oracle_results[i:] * m[i:]
         lb, _ = get_ci(curr_z, 0.025)
         candidates.append((tau, lb))
+    logging.info(f"candidates: {candidates}")
 
     true_candidate = (100, 0)
     max_candidate = (100, 0)
@@ -85,7 +90,7 @@ def supg_precision_target_importance(target: float, oracle_results: np.ndarray, 
 
 def supg_precision_target_uniform(target: float, oracle_results: np.ndarray, sampling_weights: np.ndarray, dataset_size: int) -> float:
     candidates = []
-    for i in range(0, len(m)-100, 100):
+    for i in range(0, len(oracle_results)-100, 100):
         tau = sampling_weights[i]
         curr_z = oracle_results[i:]
         lb, _ = get_ci(curr_z, 0.025)

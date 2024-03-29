@@ -18,38 +18,22 @@ def adaptive_allocation(strata_population: List[int], strata_sample_sizes: List[
                         aggregator: str="count") -> Tuple[List[int], List[int]]:
     # calculate the total variance of the sub population
     count_total_variances = []
-    sum_total_variances = []
-    avg_total_variances = []
     for i in range(len(strata_population)):
         count_variance = 0
-        sum_variance = 0
         count_mean = 0
         sum_mean = 0
         total_population = sum([strata_population[j] for j in range(i+1)])
         for j in range(i+1):
             count_variance += (strata_population[j] / total_population)**2 * strata_count_variance[j]
-            sum_variance += (strata_population[j] / total_population)**2 * strata_sum_variance[j]
             count_mean += (strata_population[j] / total_population) * strata_count_mean[j]
-            sum_mean += (strata_population[j] / total_population) * strata_sum_mean[j]
-        avg_variance = (sum_mean / count_mean)**2 * (count_variance / count_mean**2 + sum_variance / sum_mean**2)
         count_total_variances.append(count_variance)
-        sum_total_variances.append(sum_variance)
-        avg_total_variances.append(avg_variance)
     
     logging.debug(f"count variances: {count_total_variances}")
-    logging.debug(f"sum variances: {sum_total_variances}")
-    logging.debug(f"avg variances: {avg_total_variances}")
     
     # find the best allocation according to aggregator
     if aggregator == "count":
         min_variance = np.min(count_total_variances)
-        optimal_allocation = 1 + [i for i in range(len(count_total_variances)) if count_total_variances[i] == min_variance][-1]
-    elif aggregator == "sum":
-        min_variance = np.min(sum_total_variances)
-        optimal_allocation = 1 + [i for i in range(len(sum_total_variances)) if sum_total_variances[i] == min_variance][-1]
-    else:
-        min_variance = np.min(avg_total_variances)
-        optimal_allocation = 1 + [i for i in range(len(avg_total_variances)) if avg_total_variances[i] == min_variance][-1]        
+        optimal_allocation = 1 + [i for i in range(len(count_total_variances)) if count_total_variances[i] == min_variance][-1]     
 
     logging.debug(f"optimal allocation {optimal_allocation} utility {min_variance}")
     strata_for_sampling = list(range(optimal_allocation))
@@ -70,7 +54,7 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
 
         # run oracle for statistics
         stratum_sample_ids = strata_population[i][stratum_sample]
-        stratum_importance_score = proxy_scores[strata_population[i]][stratum_sample]
+        stratum_importance_score = proxy_scores[strata_population[i]][stratum_sample].tolist()
         stratum_sample_ids = np.array(np.unravel_index(stratum_sample_ids, dataset_sizes)).T
         stratum_oracle_results = []
         stratum_sample_count_results = []
@@ -88,10 +72,10 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
 
         # calculate variance and mean
         stratum_count_mean_var = np.var(stratum_sample_count_results, ddof=1).item() / len(stratum_sample_count_results)
-        stratum_sum_mean_var = np.var(stratum_sample_sum_results, ddof=1).item() / len(stratum_sample_sum_results)
         strata_count_mean_vars.append(stratum_count_mean_var)
         strata_count_mean.append(np.mean(stratum_sample_count_results))
         strata_importance_scores.append(stratum_importance_score)
+        strata_oracle_results.append(stratum_oracle_results)
 
     logging.debug(f"strata count vars: {strata_count_mean_vars}")
     logging.debug(f"strata count means: {strata_count_mean}")
@@ -126,7 +110,7 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
             stratum_proxy_scores = proxy_scores[strata_population[strata_id]]
             stratum_proxy_weights = normalize(stratum_proxy_scores)
             extra_sample = weighted_sample_pd(stratum_proxy_scores, extra_size, replace=True)
-            extra_importance_scores = proxy_scores[strata_population[strata_id]][extra_sample]
+            extra_importance_scores = proxy_scores[strata_population[strata_id]][extra_sample].tolist()
             strata_importance_scores[strata_id] += extra_importance_scores
             extra_sample_ids = strata_population[strata_id][extra_sample]
             extra_sample_ids = np.array(np.unravel_index(extra_sample_ids, dataset_sizes)).T
@@ -155,7 +139,7 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
     sampling_results = []
     count_results = []
     sampling_weights = []
-    assert len(strata_oracle_results) == len(strata_importance_scores)
+    assert len(strata_oracle_results) == len(strata_importance_scores), f"{len(strata_oracle_results)} != {len(strata_importance_scores)}"
     for stratum_sample_result, stratum_importance_score, stratum_count_result in zip(strata_oracle_results, strata_importance_scores, strata_sample_count_results):
         assert len(stratum_sample_result) == len(stratum_importance_score)
         sampling_results += stratum_sample_result
@@ -167,8 +151,28 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
     population_size = 0
     for i in sampling_strata:
         population_size += len(strata_population[i])
-    sampling_positive_upperbound = estimate_upperbound(count_result, population_size)
+    sampling_positive_upperbound = count_gt - blocking_positive
 
+    if blocking_positive / (blocking_positive + sampling_positive_upperbound) > config.target:
+        total_upperbound = blocking_positive + sampling_positive_upperbound
+        required_positive = config.target * total_upperbound
+        current_positive = 0
+        current_negative = 0
+        for stratum_population in reversed(strata_population):
+            stratum_ids = np.array(np.unravel_index(stratum_population, dataset_sizes)).T
+            for stratum_id in reversed(stratum_ids):
+                if oracle.query(stratum_id):
+                    current_positive += 1
+                else:
+                    current_negative += 1
+                if current_positive >= required_positive:
+                    break
+        recall = current_positive / count_gt
+        precision = current_positive / (current_positive + current_negative)
+        result = Selection(config.oracle_budget, config.aggregator, config.target, recall, precision)
+        result.log()
+        result.save(config.output_file)
+        return
     # get the recall target
     recall_target = get_recall_target(config.target, sampling_positive_upperbound, blocking_positive)
 
@@ -190,7 +194,7 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
         population_weights += (proxy_scores[strata_population[i]]/proxy_score_sum).tolist()
     population = np.array(population)
     population_weights = np.array(population_weights)
-    sample = population[sampling_results >= threshold]
+    sample = population[population_weights >= threshold]
     sample_ids = np.array(np.unravel_index(sample, dataset_sizes)).T
     sample_positive = 0
     sample_negative = 0
@@ -213,7 +217,7 @@ def estimate_upperbound(count_result, population_size):
     mean = count_result.mean()
     var = count_result.var(ddof=1)
     upperbound = mean + scipy.stats.norm.ppf(0.975) * np.sqrt(var) / np.sqrt(population_size)
-    return upperbound
+    return upperbound * population_size
 
 
 def stats_func(strata_population, strata_sample_count_results, strata_sample_sum_results) -> Tuple[float, float, float]:
