@@ -1,6 +1,7 @@
 dataset2modality = {
     "twitter": "text",
     "quora": "text",
+    "quora_three": "text",
     "company": "text",
     "webmasters": "text",
     "city_human": "image",

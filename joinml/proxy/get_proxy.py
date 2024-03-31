@@ -64,6 +64,21 @@ def get_proxy_score(config: Config, dataset: JoinDataset, is_wanderjoin: bool=Fa
             proxy_scores = proxy_scores.flatten()
             np.save(f"{proxy_store_path}", proxy_scores)
             return proxy_scores
+        elif config.dataset_name == "quora_three":
+            logging.info("calculating proxy scores for table 0, 1")
+            proxy_scores1 = proxy.get_proxy_score_for_tables(join_columns[0], join_columns[1])
+            logging.info("calculating proxy scores for table 1, 2")
+            proxy_scores2 = proxy.get_proxy_score_for_tables(join_columns[1], join_columns[2])
+            np.save(f"{config.cache_path}/quora_three_01_scores.npy", proxy_scores1)
+            np.save(f"{config.cache_path}/quora_three_12_scores.npy", proxy_scores2)
+            assert proxy_scores1.shape[1] == proxy_scores2.shape[0]
+            proxy_scores1 = preprocess(proxy_scores1)
+            proxy_scores2 = preprocess(proxy_scores2)
+            proxy_scores = np.einsum('ij,jk->ijk', proxy_scores1, proxy_scores2)
+            proxy_scores = preprocess(proxy_scores)
+            proxy_scores = proxy_scores.flatten()
+            np.save(f"{proxy_store_path}", proxy_scores)
+            return proxy_scores
 
         proxy_scores = proxy.get_proxy_score_for_tables(join_columns[0], join_columns[1])
         logging.info(f"Postprocessing proxy scores of shape {proxy_scores.shape} VS {len(join_columns[0])}|{len(join_columns[1])}.")

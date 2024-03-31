@@ -139,20 +139,18 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
     sampling_results = []
     count_results = []
     sampling_weights = []
-    assert len(strata_oracle_results) == len(strata_importance_scores), f"{len(strata_oracle_results)} != {len(strata_importance_scores)}"
-    for stratum_sample_result, stratum_importance_score, stratum_count_result in zip(strata_oracle_results, strata_importance_scores, strata_sample_count_results):
-        assert len(stratum_sample_result) == len(stratum_importance_score)
-        sampling_results += stratum_sample_result
-        sampling_weights += stratum_importance_score
-        count_results += stratum_count_result
-    
-    # get the upperbound of the positive results in the sampling region
-    count_result = np.array(count_results)
     population_size = 0
+    assert len(strata_oracle_results) == len(strata_importance_scores), f"{len(strata_oracle_results)} != {len(strata_importance_scores)}"
     for i in sampling_strata:
+        assert len(strata_oracle_results[i]) == len(strata_importance_scores[i]) and len(strata_importance_scores[i]) == len(strata_sample_count_results[i])
+        sampling_results += strata_oracle_results[i]
+        sampling_weights += strata_importance_scores[i]
+        count_results += strata_sample_count_results[i]
         population_size += len(strata_population[i])
-    sampling_positive_upperbound = count_gt - blocking_positive
-
+    count_result = np.array(count_results)
+    sampling_positive_true = count_gt - blocking_positive
+    sampling_positive_upperbound = estimate_upperbound(count_result, population_size)
+    print(sampling_positive_upperbound, sampling_positive_true)
     if blocking_positive / (blocking_positive + sampling_positive_upperbound) > config.target:
         total_upperbound = blocking_positive + sampling_positive_upperbound
         required_positive = config.target * total_upperbound
@@ -169,12 +167,13 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
                     break
         recall = current_positive / count_gt
         precision = current_positive / (current_positive + current_negative)
-        result = Selection(config.oracle_budget, config.aggregator, config.target, recall, precision)
+        result = Selection(config.oracle_budget, config.aggregator, config.target, recall, precision, True)
         result.log()
         result.save(config.output_file)
         return
     # get the recall target
     recall_target = get_recall_target(config.target, sampling_positive_upperbound, blocking_positive)
+    print(recall_target)
 
     weight_sort_ids = np.argsort(sampling_weights)
     proxy_score_sum = 0
@@ -183,7 +182,7 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
     sampling_weights = np.array(sampling_weights)[weight_sort_ids] / proxy_score_sum
     sampling_results = np.array(sampling_results)[weight_sort_ids]
 
-    threshold = supg_recall_target_importance(recall_target, np.array(sampling_results), 
+    threshold, status = supg_recall_target_importance(recall_target, np.array(sampling_results), 
                                               np.array(sampling_weights), population_size)
 
     # calculate true recall and precision
@@ -206,7 +205,7 @@ def run_once(config: Config, dataset, oracle, dataset_sizes, count_gt, sum_gt, a
     
     recall = (sample_positive + blocking_positive) / count_gt
     precision = (sample_positive + blocking_positive) / (sample_positive + sample_negative + blocking_positive + blocking_negative)
-    result = Selection(config.oracle_budget, config.aggregator, config.target, recall, precision)
+    result = Selection(config.oracle_budget, config.aggregator, config.target, recall, precision, status)
     result.log()
     result.save(config.output_file)
 
@@ -216,7 +215,7 @@ def get_recall_target(original_target, sampling_positive_upperbound, blocking_po
 def estimate_upperbound(count_result, population_size):
     mean = count_result.mean()
     var = count_result.var(ddof=1)
-    upperbound = mean + scipy.stats.norm.ppf(0.975) * np.sqrt(var) / np.sqrt(population_size)
+    upperbound = mean + scipy.stats.norm.ppf(1-0.05/3) * np.sqrt(var) / np.sqrt(population_size)
     return upperbound * population_size
 
 

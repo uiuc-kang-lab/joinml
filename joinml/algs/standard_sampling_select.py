@@ -33,11 +33,13 @@ def run(config: Config):
     proxy_score = get_proxy_score(config, dataset)
     proxy_weights = normalize(proxy_score)
 
+    print("all prepared, starting sampling")
     for _ in range(config.internal_loop):
         run_once(config, dataset, oracle, dataset_sizes, count_gt, sum_gt, avg_gt, proxy_weights)
 
 def run_once(config, dataset, oracle, dataset_sizes, count_gt, sum_gt, avg_gt, proxy_weights):
     if "uniform" not in config.task:
+        # importance sampling
         sample = np.random.choice(len(proxy_weights), size=config.oracle_budget, p=proxy_weights, replace=True)
         sample_weights = proxy_weights[sample]
         sample_ids = np.array(np.unravel_index(sample, dataset_sizes)).T
@@ -47,9 +49,8 @@ def run_once(config, dataset, oracle, dataset_sizes, count_gt, sum_gt, avg_gt, p
                 sample_oracle_results.append(1)
             else:
                 sample_oracle_results.append(0)
-
     elif "uniform" in config.task:
-        sample = np.random.choice(np.prod(dataset_sizes), size=config.oracle_budget)
+        sample = np.random.choice(np.prod(dataset_sizes), size=config.oracle_budget, replace=True)
         sample_ids = np.array(np.unravel_index(sample, dataset_sizes)).T
         sample_oracle_results = []
         sample_weights = proxy_weights[sample]
@@ -70,14 +71,14 @@ def run_once(config, dataset, oracle, dataset_sizes, count_gt, sum_gt, avg_gt, p
     sorted_oracle_results = np.array(sample_oracle_results)[sorted_ids]
 
     if "uniform" not in config.task:
-        recall_threshold = supg_recall_target_importance(config.target, sorted_oracle_results, 
+        recall_threshold, recall_status = supg_recall_target_importance(config.target, sorted_oracle_results, 
                                                          sorted_weights, np.prod(dataset_sizes))
-        precision_threshold = supg_precision_target_importance(config.target, sorted_oracle_results,
+        precision_threshold, precision_status = supg_precision_target_importance(config.target, sorted_oracle_results,
                                                                sorted_weights, np.prod(dataset_sizes))
     elif "uniform" in config.task:
-        recall_threshold = supg_recall_target_uniform(config.target, sorted_oracle_results, 
+        recall_threshold, recall_status = supg_recall_target_uniform(config.target, sorted_oracle_results, 
                                                     sorted_weights, np.prod(dataset_sizes))
-        precision_threshold = supg_precision_target_uniform(config.target, sorted_oracle_results, 
+        precision_threshold, precision_status = supg_precision_target_uniform(config.target, sorted_oracle_results, 
                                                             sorted_weights, np.prod(dataset_sizes))
     else:
         raise NotImplementedError(f"Task {config.task} not implemented for straight sampling.")
@@ -97,7 +98,7 @@ def run_once(config, dataset, oracle, dataset_sizes, count_gt, sum_gt, avg_gt, p
             negatives += 1
     recall = positives / count_gt
     precision = positives / (positives + negatives)
-    recall_results = Selection(config.oracle_budget, "recall", config.target, recall, precision)
+    recall_results = Selection(config.oracle_budget, "recall", config.target, recall, precision, recall_status)
     recall_results.log()
     recall_results.save(config.output_file, surfix="_recall")
 
@@ -113,6 +114,6 @@ def run_once(config, dataset, oracle, dataset_sizes, count_gt, sum_gt, avg_gt, p
             negatives += 1
     recall = positives / count_gt
     precision = positives / (positives + negatives)
-    precision_results = Selection(config.oracle_budget, "precision", config.target, recall, precision)
+    precision_results = Selection(config.oracle_budget, "precision", config.target, recall, precision, precision_status)
     precision_results.log()
     precision_results.save(config.output_file, surfix="_precision")

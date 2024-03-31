@@ -69,8 +69,8 @@ class TextDataset(JoinDataset):
         return join_column_per_table
     
     def get_statistics(self, table_ids: List[int]) -> float:
-        id1, id2 = table_ids
-        if self.dataset == "quora":
+        id1, id2 = table_ids[:2]
+        if self.dataset in ["quora", "quora_three"]:
             length1 = self.tables[0]["length"][id1]
             length2 = self.tables[0]["length"][id2]
             return abs(length1 - length2)
@@ -85,7 +85,7 @@ class TextDataset(JoinDataset):
             return 1
 
     def get_min_max_statistics(self):
-        if self.dataset == "quora":
+        if self.dataset in ["quora", "quora_three"]:
             return self.tables[0]["length"].min() - self.tables[0]["length"].max(), \
                    self.tables[0]["length"].max() - self.tables[0]["length"].min()
         elif self.dataset == "twitter":

@@ -49,9 +49,9 @@ def run_once(config, dataset, oracle, dataset_sizes, count_gt, sum_gt, avg_gt, p
     sorted_ids = np.argsort(sampling_weights)
     sorted_oracle_results = np.array(sample_oracle_results)[sorted_ids]
     sorted_sampling_weights = sampling_weights[sorted_ids]
-    recall_threshold = supg_recall_target_importance(config.target, sorted_oracle_results, 
+    recall_threshold, status = supg_recall_target_importance(config.target, sorted_oracle_results, 
                                                      sorted_sampling_weights, np.prod(dataset_sizes))
-    precision_threshold = supg_precision_target_importance(config.target, sorted_oracle_results,
+    precision_threshold, status = supg_precision_target_importance(config.target, sorted_oracle_results,
                                                            sorted_sampling_weights, np.prod(dataset_sizes))
     # calculate the true recall
     sample = np.where(proxy_weights > recall_threshold)[0]
@@ -63,7 +63,9 @@ def run_once(config, dataset, oracle, dataset_sizes, count_gt, sum_gt, avg_gt, p
             positives += 1
         else:
             negatives += 1
-    recall_results = Selection(config.budget, "recall", config.target, recall, precision)
+    recall = positives / count_gt
+    precision = positives / (positives + negatives)
+    recall_results = Selection(config.oracle_budget, "recall", config.target, recall, precision, status)
     recall_results.log()
     recall_results.save(config.output_file, surfix="_recall")
     # calculate the true precision
@@ -76,7 +78,9 @@ def run_once(config, dataset, oracle, dataset_sizes, count_gt, sum_gt, avg_gt, p
             positives += 1
         else:
             negatives += 1
-    precision_results = Selection(config.budget, "precision", config.target, recall, precision)
+    recall = positives / count_gt
+    precision = positives / (positives + negatives)
+    precision_results = Selection(config.oracle_budget, "precision", config.target, recall, precision, status)
     precision_results.log()
     precision_results.save(config.output_file, surfix="_precision")
 

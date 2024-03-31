@@ -35,12 +35,13 @@ class Estimates:
             f.write("\n")
 
 class Selection:
-    def __init__(self, cost: float, type: str, target: float, recall: float, precision: float) -> None:
+    def __init__(self, cost: float, type: str, target: float, recall: float, precision: float, status: bool) -> None:
         self.cost = cost
         self.type = type
         self.target = target
         self.recall = recall
         self.precision = precision
+        self.status = status
     
     def log(self):
         logging.info("budget: {} type {} target {} recall {} precision {}".format(
@@ -54,6 +55,7 @@ class Selection:
                 "type": self.type,
                 "target": float(self.target),
                 "recall": float(self.recall),
-                "precision": float(self.precision)
+                "precision": float(self.precision),
+                "status": str(self.status)
                 }, f)
             f.write("\n")
