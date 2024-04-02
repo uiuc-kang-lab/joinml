@@ -23,7 +23,7 @@ def parse_args() -> Config:
     for k, v in vars(args).items():
         if k != "dataset_config":
             config[k] = v
-    config["output_file"] = f"{config['dataset_name']}-{config['task']}.jsonl"
+    config["output_file"] = f"{config['dataset_name']}-{config['task']}-{config['oracle_budget']}.jsonl"
     config["log_path"] = f"logs/{config['dataset_name']}-{config['task']}_{config['seed']}.log"
     return Config(**config)
 

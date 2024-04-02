@@ -326,5 +326,8 @@ def run(config: Config):
 
     for exp_id in range(config.internal_loop):
         logging.info(f"running {exp_id} experiments")
-        run_once(config, dataset, oracle, dataset_sizes, count_gt, sum_gt, avg_gt,
+        try:
+            run_once(config, dataset, oracle, dataset_sizes, count_gt, sum_gt, avg_gt,
                  proxy_scores, strata, strata_population, strata_sample_sizes)
+        except:
+            continue
