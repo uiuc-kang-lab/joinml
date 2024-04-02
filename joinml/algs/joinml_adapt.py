@@ -29,7 +29,10 @@ def adaptive_allocation(strata_population: List[int], strata_sample_sizes: List[
             sum_variance += (strata_population[j] / total_population)**2 * strata_sum_variance[j]
             count_mean += (strata_population[j] / total_population) * strata_count_mean[j]
             sum_mean += (strata_population[j] / total_population) * strata_sum_mean[j]
-        avg_variance = (sum_mean / count_mean)**2 * (count_variance / count_mean**2 + sum_variance / sum_mean**2)
+        if count_mean == 0 or sum_mean == 0:
+            avg_variance = 1e15 # a large number
+        else:
+            avg_variance = (sum_mean / count_mean)**2 * (count_variance / count_mean**2 + sum_variance / sum_mean**2)
         count_total_variances.append(count_variance)
         sum_total_variances.append(sum_variance)
         avg_total_variances.append(avg_variance)
