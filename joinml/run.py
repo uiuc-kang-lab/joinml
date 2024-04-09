@@ -24,7 +24,7 @@ def run(config: Config):
         blocking_noci(config)
     elif config.task == "joinml-fixed":
         joinml_fixed(config)
-    elif config.task == "joinml-adapt":
+    elif config.task == "BaS":
         joinml_adapt(config)
     elif config.task == "wanderjoin":
         wanderjoin(config)

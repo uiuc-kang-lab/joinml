@@ -1,4 +1,4 @@
-# JoinML
+# Blocking-augmented Sampling Join
 
 ## Setup
 
@@ -10,7 +10,7 @@ $ pip install -r requirements.txt
 $ pip install -e .
 ```
 
-Step 2: Download datasets from google drive
+Step 2: Download datasets
 ```bash
 $ cd data
 $ bash download.sh download <dataset_name>
@@ -24,11 +24,15 @@ $ conda activate <env_name>
 
 ## Run experiments
 
-Step 1: set up config, see examples in the `./scripts`
+Step 1: set up config, see examples in the `./configs`
 
 Step 2: run the config script in the proper environment
 ```bash
-$ python scripts/<script_name>.py
+$ python run_joinml.py --dataset_config configs/<dataset>.yml \
+  --task {BaS, wanderjoin, importance, uniform} \
+  --oracle_budget <budget> \
+  --max_blocking_ratio <B> \
+  --internal_loop <repeats>
 ```
 
 ## Datasets
