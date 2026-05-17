@@ -1,0 +1,9 @@
+data_path: "data"
+dataset_name: "ecomm-q9"
+is_self_join: True
+confidence_level: 0.95
+proxy_score_cache: True
+proxy_normalizing_style: "proportional"
+bootstrap_trials: 1000
+aggregator: "median"
+proxy: "clip"
