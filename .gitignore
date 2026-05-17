@@ -1,22 +1,37 @@
-**/__MACOSX
-**/.DS_Store
-**.ipynb
-**/__pycache__
-logs
-models
-data/city_vehicle*
-data/company*
-data/quora*
-data/twitter*
-data/quora_3500
-data/webmaster*
-data/stackoverflow*
-data/city_human*
-data/VeRi*
-data/*.tar
-data/flickr30k*
-archive
-.results
-run*.sh
-*.out
+# Python artefacts
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+
+# Experiment outputs
+runs/
+logs/
 *.jsonl
+*.out
+slurm-*.out
+
+# Data and caches (large, dataset-specific). The dataset directories under
+# data/ are excluded, but the tracked docs and download script are kept.
+data/*
+!data/README.md
+!data/SEMBENCH.md
+!data/download.sh
+!data/.gitkeep
+**/*.npy
+.cache/
+
+# Editor / OS
+.DS_Store
+**/__MACOSX
+.idea/
+.vscode/
+**.ipynb
+
+# Pre-public-release archive
+.cleanup_archive/
+
+# Local scratch / personal artefacts
+.results/
+archive/
+models/
