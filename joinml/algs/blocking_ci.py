@@ -2,7 +2,7 @@ from joinml.proxy.get_proxy import get_proxy_score, get_proxy_rank
 from joinml.dataset_loader import load_dataset, JoinDataset
 from joinml.oracle import Oracle
 from joinml.config import Config
-from joinml.utils import set_up_logging, get_cutoff_score, get_ci_gaussian, get_ci_bootstrap_ttest
+from joinml.utils import set_up_logging, get_cutoff_score_unbiased, get_ci_bootstrap_ttest
 from joinml.estimates import Estimates
 
 import time
@@ -25,12 +25,12 @@ def run(config: Config):
     if config.is_self_join:
         dataset_sizes = (dataset_sizes[0], dataset_sizes[0])
 
-    count_gt, sum_gt, avg_gt, min_gt, max_gt, median_gt = dataset.get_gt(oracle)
+    count_gt, sum_gt, avg_gt, min_gt, max_gt = dataset.get_gt(oracle)
 
     blocking_budget = config.oracle_budget
 
     proxy_weights = get_proxy_score(config, dataset)
-    cutoff_score = get_cutoff_score(config.dataset_name)
+    cutoff_score = get_cutoff_score_unbiased(config.dataset_name)
     logging.debug(f"cutoff_score: {cutoff_score}")
     
     unblocked_population = np.argwhere(proxy_weights >= cutoff_score).reshape(-1)
@@ -87,30 +87,6 @@ def run(config: Config):
             lb = mean_lb * N
             ub = mean_ub * N
             estimate = mean * N
-        elif config.aggregator == "min":
-            gt = min_gt
-            N = len(oracle.oracle_labels)
-            n = len(sample_positive_results)
-            fpc = (N-n) / (N-1) if not replace else 1
-            estimate = np.min(sample_positive_results)
-            lb = estimate  # min has no CI
-            ub = estimate
-        elif config.aggregator == "max":
-            gt = max_gt
-            N = len(oracle.oracle_labels)
-            n = len(sample_positive_results)
-            fpc = (N-n) / (N-1) if not replace else 1
-            estimate = np.max(sample_positive_results)
-            lb = estimate  # max has no CI
-            ub = estimate
-        elif config.aggregator == "median":
-            gt = median_gt
-            N = len(oracle.oracle_labels)
-            n = len(sample_positive_results)
-            fpc = (N-n) / (N-1) if not replace else 1
-            estimate = np.median(sample_positive_results)
-            lb = estimate  # median has no CI
-            ub = estimate
         else:
             gt = avg_gt
             N = len(oracle.oracle_labels)

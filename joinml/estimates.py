@@ -19,18 +19,18 @@ class Estimates:
             self.cost, self.true_error, self.lb_errors, self.ub_errors, self.coverages))
     
     def save(self, output_file: str, surfix: str = ""):
-        output_file = output_file.split(".")[0] + surfix + ".jsonl"
+        output_file = output_file.rsplit(".", 1)[0] + surfix + ".jsonl"
         with open(f"{output_file}", "a+") as f:
             json.dump({
                 "budget": float(self.cost),
                 "gt": float(self.gt),
                 "est": float(self.est),
                 "true_error": float(self.true_error),
-                "lbs": self.lbs,
-                "ubs": self.ubs,
-                "lb_errors": self.lb_errors,
-                "ub_error": self.ub_errors,
-                "coverages": self.coverages
+                "lbs": [float(lb) for lb in self.lbs],
+                "ubs": [float(ub) for ub in self.ubs],
+                "lb_errors": [float(lb_error) for lb_error in self.lb_errors],
+                "ub_errors": [float(ub_error) for ub_error in self.ub_errors],
+                "coverages": [int(coverage) for coverage in self.coverages]
                 }, f)
             f.write("\n")
 
@@ -48,7 +48,7 @@ class Selection:
             self.cost, self.type, self.target, self.recall, self.precision))
         
     def save(self, output_file: str, surfix: str = ""):
-        output_file = output_file.split(".")[0] + surfix + ".jsonl"
+        output_file = output_file.rsplit(".", 1)[0] + surfix + ".jsonl"
         with open(f"{output_file}", "a+") as f:
             json.dump({
                 "budget": float(self.cost),
@@ -57,5 +57,29 @@ class Selection:
                 "recall": float(self.recall),
                 "precision": float(self.precision),
                 "status": str(self.status)
+                }, f)
+            f.write("\n")
+
+class TopK:
+    def __init__(self, cost: float, gt: set, est: set) -> None:
+        self.gt = gt
+        self.est = est
+        self.precision = len(self.gt.intersection(self.est)) / len(self.est) if len(self.est) > 0 else 0.0
+        self.recall = len(self.gt.intersection(self.est)) / len(self.gt) if len(self.gt) > 0 else 0.0
+        self.cost = cost
+    
+    def log(self):
+        logging.info("budget: {} gt {} est {} precision {} recall {}".format(
+            self.cost, self.gt, self.est, self.precision, self.recall))
+    
+    def save(self, output_file: str, surfix: str = ""):
+        output_file = output_file.rsplit(".", 1)[0] + surfix + ".jsonl"
+        with open(f"{output_file}", "a+") as f:
+            json.dump({
+                "budget": float(self.cost),
+                "gt": list(self.gt),
+                "est": list(self.est),
+                "precision": float(self.precision),
+                "recall": float(self.recall)
                 }, f)
             f.write("\n")

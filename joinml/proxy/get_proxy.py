@@ -1,8 +1,3 @@
-from joinml.proxy.image_embedding_proxy import ImageEmbeddingProxy
-from joinml.proxy.stringmatching_proxy import StringMatchingProxy
-from joinml.proxy.opencv_proxy import OpencvProxy
-from joinml.proxy.text_embedding_proxy import TextEmbeddingProxy
-from joinml.proxy.multimodal_embedding_proxy import MultiModalEmbeddingProxy
 from joinml.config import Config
 from joinml.dataset_loader import JoinDataset
 from joinml.commons import kind2proxy
@@ -16,30 +11,49 @@ from typing import Union
 
 def get_proxy(config: Config):
     if config.proxy in kind2proxy["image_embedding"]:
+        from joinml.proxy.image_embedding_proxy import ImageEmbeddingProxy
+        
         return ImageEmbeddingProxy(config)
     elif config.proxy in kind2proxy["text_embedding"]:
+        from joinml.proxy.text_embedding_proxy import TextEmbeddingProxy
+
         return TextEmbeddingProxy(config)
     elif config.proxy in kind2proxy["string_matching"]:
+        from joinml.proxy.stringmatching_proxy import StringMatchingProxy
+        
         return StringMatchingProxy(config)
     elif config.proxy in kind2proxy["opencv"]:
+        from joinml.proxy.opencv_proxy import OpencvProxy
+
         return OpencvProxy(config)
     elif config.proxy in kind2proxy["multimodal"]:
+        from joinml.proxy.multimodal_embedding_proxy import MultiModalEmbeddingProxy
+
         return MultiModalEmbeddingProxy(config)
-    elif config.proxy.startswith("data/"):
+    elif config.proxy.startswith("data/") or config.proxy == "":
+        from joinml.proxy.text_embedding_proxy import TextEmbeddingProxy
+        
         return TextEmbeddingProxy(config)
     else:
         raise NotImplementedError(f"Proxy {config.proxy} not implemented.")
 
 def get_proxy_score(config: Config, dataset: JoinDataset, is_wanderjoin: bool=False) -> np.ndarray:
     # check cache for proxy scores
-    proxy_store_path = f"{config.cache_path}/{config.dataset_name}_{config.proxy.split('/')[-1]}_scores.npy"
+    if config.proxy == "" and not config.join_reorder:
+        proxy_store_path = f"{config.cache_path}/{config.dataset_name}.npy"
+    elif config.proxy == "":
+        proxy_store_path =  f"{config.cache_path}/{config.dataset_name}_{config.table_ids[0]}{config.table_ids[1]}_scores.npy"
+        print(proxy_store_path)
+    else:
+        proxy_store_path = f"{config.cache_path}/{config.dataset_name}_{config.proxy.split('/')[-1]}_scores.npy"
     dataset_sizes = dataset.get_sizes()
     if config.is_self_join:
         dataset_sizes = [dataset_sizes[0], dataset_sizes[0]]
     if config.proxy_score_cache and os.path.exists(proxy_store_path):
         logging.info("Loading proxy scores from %s", proxy_store_path)
         proxy_scores = np.load(proxy_store_path)
-        assert np.prod(proxy_scores.shape) == np.prod(dataset_sizes), "Proxy scores shape does not match dataset sizes."
+        print(proxy_scores.shape)
+        assert np.prod(proxy_scores.shape) == np.prod(dataset_sizes), f"Proxy scores shape does not match dataset sizes: {np.prod(proxy_scores.shape)} != {np.prod(dataset_sizes)}"
         assert isinstance(proxy_scores, np.ndarray), "Proxy scores is not a numpy array."
     else:
         logging.info("Calculating proxy scores.")
@@ -103,7 +117,12 @@ def get_proxy_rank(config: Config, dataset: JoinDataset, proxy_scores: Union[np.
         dataset_sizes = [dataset_sizes[0], dataset_sizes[0]]
     if proxy_scores is None:
         proxy_scores = get_proxy_score(config, dataset)
-    proxy_rank_store_path = f"{config.cache_path}/{config.dataset_name}_{config.proxy.split('/')[-1]}_rank.npy"
+    if config.proxy == "" and not config.join_reorder:
+        proxy_rank_store_path = f"{config.cache_path}/{config.dataset_name.replace('scores', 'rank')}.npy"
+    elif config.proxy == "":
+        proxy_rank_store_path = f"{config.cache_path}/{config.dataset_name}_{config.table_ids[0]}{config.table_ids[1]}_rank.npy"
+    else:
+        proxy_rank_store_path = f"{config.cache_path}/{config.dataset_name}_{config.proxy.split('/')[-1]}_rank.npy"
     if config.proxy_score_cache and os.path.exists(proxy_rank_store_path):
         logging.info("Loading proxy rank from %s", proxy_rank_store_path)
         proxy_rank = np.load(proxy_rank_store_path)

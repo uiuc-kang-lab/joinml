@@ -7,12 +7,20 @@ dataset2modality = {
     "city_human": "image",
     "city_human_three": "image",
     "VeRi": "image",
-    "flickr30k": "multimodal"
+    "flickr30k": "multimodal",
+    "roxford": "image_1",
+    "roxford-large": "image_1",
+    "ecomm-q7": "text",
+    "ecomm-q8": "multimodal",
+    "movie-q5": "text",
+    "movie-q6": "text",
+    "ecomm-q9": "image_1",
+    "ecomm-q11": "joinop"
 }
 
 kind2proxy = {
     "opencv": ["Compare Histogram", "pHash"],
-    "image_embedding": ["infomin", "reid", "human_reid"],
+    "image_embedding": ["infomin", "reid", "human_reid", "clip"],
     "text_embedding": [
         "all-MiniLM-L6-v2",
         "all-mpnet-base-v2",
@@ -23,7 +31,8 @@ kind2proxy = {
         "paraphrase-multilingual-MiniLM-L12-v2",
         "paraphrase-MiniLM-L3-v2",
         "distiluse-base-multilingual-cased-v1",
-        "distiluse-base-multilingual-cased-v2"
+        "distiluse-base-multilingual-cased-v2",
+        "flair"
         ],
     "string_matching": [
         'Dice', 

@@ -28,3 +28,17 @@ class Config:
     internal_loop: int = 1 # for time efficiency of large datasets
     aggregator: str = "count" # [count, sum, avg]
     target: float = 0.95 # target recall for recall/precision task
+    ci: bool = False # confidence interval for recall/precision task
+    w_exp: float = 1.0 # weight exponent
+    table_ids: str = "0,1"
+    join_reorder: bool = False
+    top_k: int = 5 # for top-k task
+    # Phase-C ablation knobs; defaults preserve Phase-B behaviour.
+    defensive_mix_ratio: float = 0.0 # (1-ε)W + ε·uniform; 0 disables
+    allocation_search: str = "prefix" # "prefix" | "subset" | "auto" | "evt"
+    sampling_scheme: str = "wr" # "wr" (with replacement) | "wor"
+    strata_size: int = 1000 # target pilot-sample size per blocking-candidate stratum
+    var_shrinkage: float = 0.0 # Q1: pseudo-samples worth of pooled-variance prior; 0 disables
+    force_block_concentrated: bool = False # Q2: force β={K} when stratum-K match-rate >> stratum-0
+    force_block_threshold: float = 100.0 # match-rate ratio threshold for Q2
+    two_stage_allocation: bool = False # Q5: pilot → rough β → 30% main → re-allocate → 70% main

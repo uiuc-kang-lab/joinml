@@ -159,10 +159,12 @@ def get_ci_wilson_score_interval(data, confidence_level=0.95):
     width = z / (1+z**2/len(data)) * np.sqrt(mean*(1-mean)/len(data) + z**2/(4*len(data)**2))
     return center - width, center + width
 
-def normalize(array: np.ndarray, style="proportional"):
+def normalize(array: np.ndarray, style="proportional", exponent: float=1):
     if style == "proportional":
+        array = np.power(array, exponent)
         array /= np.sum(array)
     elif style == "sqrt":
+        print("using square root normalization")
         array = np.sqrt(array)
         array /= np.sum(array)
     else:
@@ -194,6 +196,11 @@ def get_non_positive_ci(max_statistics: float,
 
 def get_cutoff_score(dataset: str):
     with open("block_noci/valid_threshold.json") as f:
+        thresholds = json.load(f)
+    return thresholds[dataset]
+
+def get_cutoff_score_unbiased(dataset: str):
+    with open("block_noci/unbiased_threshold.json") as f:
         thresholds = json.load(f)
     return thresholds[dataset]
     

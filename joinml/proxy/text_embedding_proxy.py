@@ -18,6 +18,9 @@ class TextEmbeddingProxy(Proxy):
         
     def get_tokenizer(self):
         return self.model.tokenize
+    
+    def get_embedding(self, data: List[str]):
+        return self.model.encode(data, device=self.device, convert_to_numpy=True)
 
     def get_proxy_score_for_tuples(self, tuples: List[List[str]]) -> np.ndarray:
         embeddings = []
