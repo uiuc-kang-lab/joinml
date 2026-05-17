@@ -13,12 +13,12 @@ INTERNAL_LOOP=${INTERNAL_LOOP:-200}
 TAG=${TAG:-sec7.3-nonlinear}
 
 jobs=(
-  # Ecomm-Q8 (MIN) — GEV-fit allocator + aggregator override
-  "configs/ecomm-q8.yml          1000000  --aggregator min --allocation_search evt"
-  "configs/ecomm-q8.yml          2000000  --aggregator min --allocation_search evt"
-  "configs/ecomm-q8.yml          3000000  --aggregator min --allocation_search evt"
-  "configs/ecomm-q8.yml          4000000  --aggregator min --allocation_search evt"
-  "configs/ecomm-q8.yml          5000000  --aggregator min --allocation_search evt"
+  # Ecomm-Q8 (MIN) — GEV-fit allocator
+  "configs/ecomm-q8.yml          1000000  --allocation_search evt"
+  "configs/ecomm-q8.yml          2000000  --allocation_search evt"
+  "configs/ecomm-q8.yml          3000000  --allocation_search evt"
+  "configs/ecomm-q8.yml          4000000  --allocation_search evt"
+  "configs/ecomm-q8.yml          5000000  --allocation_search evt"
   # Ecomm-Q9 (MEDIAN) — defaults
   "configs/ecomm-q9.yml            25000  "
   "configs/ecomm-q9.yml            50000  "
