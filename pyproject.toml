@@ -3,6 +3,8 @@ name = "join-ml"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
+license = { text = "MIT" }
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = []
 

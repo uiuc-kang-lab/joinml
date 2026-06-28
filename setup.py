@@ -7,5 +7,6 @@ setup(
     url="",
     author="",
     author_email="",
+    license="MIT",
     packages=find_packages(),
 )
